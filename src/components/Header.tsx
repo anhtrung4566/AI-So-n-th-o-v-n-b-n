@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-stone-300">
-              Rà soát tiêu ngữ Đảng, bắt lỗi số ký hiệu, trích yếu, thẩm quyền ký và chuẩn hóa văn kiện công tác Đảng
+              Rà soát tiêu ngữ Đảng, bắt lỗi số ký hiệu, trích yếu, thẩm quyền ký, tự thêm Huy hiệu / Logo Đảng và chuẩn hóa văn kiện
             </p>
           </div>
         </div>

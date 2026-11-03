@@ -20,10 +20,16 @@ import {
   Trash2,
   AlertCircle
 } from 'lucide-react';
-import { GeneratedDocument } from '../types';
+import { GeneratedDocument, PartyLogoConfig } from '../types';
 import { PARTY_SAMPLE_DOCUMENTS, PARTY_DOCUMENT_TYPES_CATALOG } from '../data/partyHandbook';
 import { exportToWordDocument, copyToClipboard } from '../utils/docxExporter';
 import { PdfViewerModal } from './PdfViewerModal';
+import {
+  PartyLogoSelector,
+  PartyLogoDisplay,
+  PartyWatermarkDisplay,
+  DEFAULT_LOGO_CONFIG
+} from './PartyLogo';
 
 export const DraftingTab: React.FC = () => {
   const [docType, setDocType] = useState<string>('Nghị quyết');
@@ -37,6 +43,9 @@ export const DraftingTab: React.FC = () => {
   );
   const [signerTitle, setSignerTitle] = useState<string>('T/M BAN THƯỜNG VỤ\nBÍ THƯ');
   const [signerName, setSignerName] = useState<string>('Trần Đình Sơn');
+
+  // Party Logo & Emblem Configuration State
+  const [logoConfig, setLogoConfig] = useState<PartyLogoConfig>(DEFAULT_LOGO_CONFIG);
 
   // Reference Template State (Tính năng thêm văn bản mẫu tham khảo)
   const [referenceText, setReferenceText] = useState<string>('');
@@ -617,6 +626,9 @@ export const DraftingTab: React.FC = () => {
             </div>
           </div>
 
+          {/* Party Logo & Emblem Configuration Card */}
+          <PartyLogoSelector config={logoConfig} onChange={setLogoConfig} />
+
           {errorMessage && (
             <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 flex items-start justify-between gap-3 shadow-xs">
               <div className="flex items-start gap-2">
@@ -637,7 +649,7 @@ export const DraftingTab: React.FC = () => {
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 shadow-md shadow-red-700/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 shadow-md shadow-red-700/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
@@ -703,12 +715,31 @@ export const DraftingTab: React.FC = () => {
           {/* Document Content rendered with crisp font-admin (Tinos / Times New Roman) */}
           <div className="p-6 bg-slate-200/60 min-h-[580px] flex justify-center overflow-x-auto">
             {generatedDoc ? (
-              <div className="w-full max-w-2xl bg-white p-8 sm:p-12 shadow-md rounded-lg border border-slate-300 font-admin text-slate-900 text-sm leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify">
-                {generatedDoc.full_text}
+              <div className="w-full max-w-2xl bg-white p-8 sm:p-12 shadow-md rounded-lg border border-slate-300 font-admin text-slate-900 text-sm leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify relative overflow-hidden">
+                {/* Optional Watermark */}
+                <PartyWatermarkDisplay config={logoConfig} />
+
+                {/* Top Center Logo / Emblem */}
+                {logoConfig.enabled && logoConfig.position === 'top-center' && (
+                  <div className="mb-4 text-center select-none print:mb-2 relative z-10">
+                    <PartyLogoDisplay config={logoConfig} className="mx-auto" />
+                  </div>
+                )}
+
+                {/* Top Left Logo */}
+                {logoConfig.enabled && logoConfig.position === 'top-left' && (
+                  <div className="mb-3 select-none relative z-10">
+                    <PartyLogoDisplay config={logoConfig} />
+                  </div>
+                )}
+
+                <div className="relative z-10">
+                  {generatedDoc.full_text}
+                </div>
 
                 {/* Notes */}
                 {generatedDoc.notes && generatedDoc.notes.length > 0 && (
-                  <div className="mt-8 pt-6 border-t border-dashed border-slate-300 font-sans text-xs text-slate-600 space-y-1 bg-amber-50/80 p-4 rounded-lg">
+                  <div className="mt-8 pt-6 border-t border-dashed border-slate-300 font-sans text-xs text-slate-600 space-y-1 bg-amber-50/80 p-4 rounded-lg relative z-10">
                     <span className="font-bold text-amber-900 flex items-center gap-1 mb-2">
                       <Info className="w-3.5 h-3.5 text-amber-700" />
                       Lưu ý kỹ thuật trình bày theo quy định thể thức:
@@ -743,6 +774,7 @@ export const DraftingTab: React.FC = () => {
         onClose={() => setIsPdfModalOpen(false)}
         documentTitle={pdfModalTitle}
         documentText={pdfModalContent}
+        logoConfig={logoConfig}
         onApplyReference={(text) => {
           setReferenceText(text);
           setShowReferenceBox(true);

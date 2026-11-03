@@ -39,3 +39,17 @@ export interface FormalRewriteResult {
   formal_text: string;
   key_improvements: string[];
 }
+
+export type LogoType = 'party-emblem-gold' | 'party-emblem-monochrome' | 'party-emblem-red' | 'custom';
+export type LogoPosition = 'top-center' | 'top-left' | 'watermark-center';
+export type LogoSize = 'sm' | 'md' | 'lg';
+
+export interface PartyLogoConfig {
+  enabled: boolean;
+  type: LogoType;
+  customImageDataUrl?: string;
+  position: LogoPosition;
+  size: LogoSize;
+  opacity?: number;
+  showInPrint?: boolean;
+}

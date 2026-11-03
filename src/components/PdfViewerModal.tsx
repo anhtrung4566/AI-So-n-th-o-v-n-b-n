@@ -13,15 +13,25 @@ import {
   FileCheck2,
   ChevronLeft,
   ChevronRight,
-  Maximize2
+  Maximize2,
+  Eye,
+  Sliders
 } from 'lucide-react';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
+import { PartyLogoConfig } from '../types';
+import {
+  PartyLogoDisplay,
+  PartyWatermarkDisplay,
+  DEFAULT_LOGO_CONFIG,
+  PartyEmblemSvg
+} from './PartyLogo';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
   documentTitle?: string;
   documentText?: string;
+  logoConfig?: PartyLogoConfig;
   onApplyReference?: (text: string) => void;
 }
 
@@ -30,6 +40,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   onClose,
   documentTitle,
   documentText,
+  logoConfig: initialLogoConfig,
   onApplyReference,
 }) => {
   const [selectedPresetId, setSelectedPresetId] = useState<string>(
@@ -37,8 +48,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   );
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [copied, setCopied] = useState<boolean>(false);
+  const [modalLogoConfig, setModalLogoConfig] = useState<PartyLogoConfig>(
+    initialLogoConfig || DEFAULT_LOGO_CONFIG
+  );
 
   if (!isOpen) return null;
+
+  const activeLogoConfig = modalLogoConfig;
 
   // Determine current document
   const currentPreset = PARTY_SAMPLE_DOCUMENTS.find((p) => p.id === selectedPresetId);
@@ -50,6 +66,18 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     if (!printWindow) {
       window.print();
       return;
+    }
+
+    let logoHtml = '';
+    if (activeLogoConfig.enabled) {
+      const sizePx = activeLogoConfig.size === 'sm' ? 40 : activeLogoConfig.size === 'lg' ? 68 : 52;
+      if (activeLogoConfig.position === 'top-center') {
+        if (activeLogoConfig.type === 'custom' && activeLogoConfig.customImageDataUrl) {
+          logoHtml = `<div style="text-align: center; margin-bottom: 12px;"><img src="${activeLogoConfig.customImageDataUrl}" style="height: ${sizePx}px; object-fit: contain;" /></div>`;
+        } else {
+          logoHtml = `<div style="text-align: center; margin-bottom: 12px;"><svg width="${sizePx}" height="${sizePx}" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48" fill="#DC2626" stroke="#B45309" stroke-width="2"/><g fill="#FDE047"><path d="M26 77 C24 75, 25 72, 28 69 L67 30 C70 27, 73 28, 75 30 L77 32 C79 34, 78 37, 75 40 L36 79 C33 82, 30 81, 28 79 Z"/><path d="M58 21 L77 40 L70 47 L65 42 L62 45 L58 41 L61 38 L56 33 L51 38 L47 34 L54 27 L51 24 Z"/></g><g fill="#FACC15"><path d="M74 74 C72 72, 73 68, 76 65 L81 60 C83 58, 86 59, 88 61 L89 62 C91 64, 90 67, 88 70 L83 75 C80 78, 77 77, 74 74 Z"/><path d="M77 62 C74 48, 62 33, 47 26 C35 20, 23 23, 19 28 C16 32, 19 36, 24 35 C32 34, 43 38, 50 48 C55 55, 56 65, 53 72 C50 78, 43 83, 37 83 C33 83, 30 80, 27 76 C25 73, 21 73, 20 76 C19 79, 21 84, 26 88 C34 94, 46 93, 56 86 C67 79, 75 70, 77 62 Z"/></g></svg></div>`;
+        }
+      }
     }
 
     const htmlContent = `
@@ -65,89 +93,23 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             body {
               font-family: "Times New Roman", Times, serif;
               font-size: 14pt;
-              line-height: 1.4;
+              line-height: 1.45;
               color: #000;
               margin: 0;
               padding: 10px;
             }
-            .header-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 20px;
-            }
-            .header-table td {
-              vertical-align: top;
-            }
-            .org-cell {
-              width: 45%;
-              text-align: center;
-              font-size: 12pt;
-              font-weight: bold;
-            }
-            .motto-cell {
-              width: 55%;
-              text-align: center;
-            }
-            .motto-country {
-              font-size: 11pt;
-              font-weight: bold;
-              text-transform: uppercase;
-            }
-            .motto-party {
-              font-size: 13pt;
-              font-weight: bold;
-              text-transform: uppercase;
-              margin-top: 4px;
-            }
-            .motto-line {
-              width: 160px;
-              height: 1px;
-              background-color: #000;
-              margin: 4px auto 8px auto;
-            }
-            .place-date {
-              font-style: italic;
-              font-size: 13pt;
-              margin-top: 6px;
-            }
-            .doc-type {
-              text-align: center;
-              font-size: 15pt;
-              font-weight: bold;
-              text-transform: uppercase;
-              margin-top: 25px;
-            }
-            .doc-subject {
-              text-align: center;
-              font-size: 14pt;
-              font-weight: bold;
-              margin: 8px 0 25px 0;
-            }
             .content {
               text-align: justify;
-              text-indent: 1.27cm;
               white-space: pre-wrap;
-              font-size: 13.5pt;
+              font-size: 14pt;
             }
-            .footer-info {
-              margin-top: 35px;
-              display: flex;
-              justify-content: space-between;
-            }
-            .recipient {
-              font-size: 11pt;
-              font-style: italic;
-              width: 45%;
-            }
-            .signer {
-              text-align: center;
-              width: 45%;
-              font-size: 13pt;
-              font-weight: bold;
+            @media print {
+              body { padding: 0; }
             }
           </style>
         </head>
         <body>
+          ${logoHtml}
           <div class="content">${activeContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
           <script>
             window.onload = function() {
@@ -254,28 +216,81 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </div>
         </div>
 
-        {/* Preset Picker Bar (if viewing sample references) */}
-        {!documentText && (
-          <div className="bg-slate-950 px-5 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs shrink-0">
-            <span className="text-stone-400 font-semibold shrink-0 flex items-center gap-1">
-              <Flag className="w-3 h-3 text-red-500" />
-              Chọn mẫu PDF tham khảo:
-            </span>
-            {PARTY_SAMPLE_DOCUMENTS.map((doc) => (
-              <button
-                key={doc.id}
-                onClick={() => setSelectedPresetId(doc.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                  selectedPresetId === doc.id
-                    ? 'bg-red-700 text-white shadow-xs font-bold border border-red-500'
-                    : 'bg-slate-800/80 text-stone-300 hover:bg-slate-800 hover:text-white border border-slate-700'
-                }`}
-              >
-                {doc.type}: {doc.title.split('(')[0].trim()}
-              </button>
-            ))}
+        {/* Preset Picker Bar & Quick Logo Toolbar */}
+        <div className="bg-slate-950 px-5 py-2.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+          {!documentText ? (
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <span className="text-stone-400 font-semibold shrink-0 flex items-center gap-1">
+                <Flag className="w-3 h-3 text-red-500" />
+                Chọn mẫu PDF tham khảo:
+              </span>
+              {PARTY_SAMPLE_DOCUMENTS.map((doc) => (
+                <button
+                  key={doc.id}
+                  onClick={() => setSelectedPresetId(doc.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
+                    selectedPresetId === doc.id
+                      ? 'bg-red-700 text-white shadow-xs font-bold border border-red-500'
+                      : 'bg-slate-800/80 text-stone-300 hover:bg-slate-800 hover:text-white border border-slate-700'
+                  }`}
+                >
+                  {doc.type}: {doc.title.split('(')[0].trim()}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-stone-300">
+              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              <span className="font-semibold text-white">Chế độ xem trước văn kiện:</span>
+              <span className="text-amber-300 italic font-serif truncate max-w-sm">{activeTitle}</span>
+            </div>
+          )}
+
+          {/* Quick Logo Options inside Modal */}
+          <div className="flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-red-900/40 ml-auto">
+            <PartyEmblemSvg type={activeLogoConfig.type} sizePx={16} />
+            <span className="text-amber-200 font-medium text-[11px]">Huy hiệu / Logo:</span>
+            <button
+              type="button"
+              onClick={() => setModalLogoConfig((c) => ({ ...c, enabled: !c.enabled }))}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                activeLogoConfig.enabled
+                  ? 'bg-red-700 text-white'
+                  : 'bg-slate-800 text-stone-400 hover:text-white'
+              }`}
+            >
+              {activeLogoConfig.enabled ? 'Bật' : 'Tắt'}
+            </button>
+            {activeLogoConfig.enabled && (
+              <div className="flex items-center gap-1 border-l border-slate-700 pl-2">
+                <button
+                  type="button"
+                  onClick={() => setModalLogoConfig((c) => ({ ...c, type: 'party-emblem-gold', position: 'top-center' }))}
+                  className={`px-1.5 py-0.5 rounded text-[10px] ${activeLogoConfig.type === 'party-emblem-gold' && activeLogoConfig.position === 'top-center' ? 'bg-amber-400 text-slate-950 font-bold' : 'text-stone-300 hover:text-white'}`}
+                  title="Búa Liềm Vàng-Đỏ đỉnh trang"
+                >
+                  Đỉnh Vàng-Đỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalLogoConfig((c) => ({ ...c, type: 'party-emblem-monochrome', position: 'top-center' }))}
+                  className={`px-1.5 py-0.5 rounded text-[10px] ${activeLogoConfig.type === 'party-emblem-monochrome' && activeLogoConfig.position === 'top-center' ? 'bg-slate-200 text-slate-950 font-bold' : 'text-stone-300 hover:text-white'}`}
+                  title="Đơn sắc in ấn"
+                >
+                  Đơn Sắc
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalLogoConfig((c) => ({ ...c, position: 'watermark-center' }))}
+                  className={`px-1.5 py-0.5 rounded text-[10px] ${activeLogoConfig.position === 'watermark-center' ? 'bg-red-800 text-amber-200 font-bold' : 'text-stone-300 hover:text-white'}`}
+                  title="Dấu chìm mờ trung tâm"
+                >
+                  Dấu Chìm
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* PDF Viewer Body */}
         <div className="flex-1 bg-stone-800/90 overflow-y-auto p-4 sm:p-8 flex justify-center">
@@ -284,42 +299,34 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             className="transition-transform duration-150 ease-out"
           >
             {/* The A4 Simulation Sheet */}
-            <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl p-[20mm_15mm_20mm_25mm] font-serif text-[14pt] leading-[1.4] relative border border-stone-300">
-              {/* Official Seal / Watermark hint */}
-              <div className="absolute top-8 right-8 pointer-events-none opacity-5">
-                <div className="w-32 h-32 rounded-full border-4 border-red-700 flex items-center justify-center text-red-700 text-4xl font-black">
-                  ★
-                </div>
-              </div>
+            <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl p-[20mm_15mm_20mm_25mm] font-serif text-[14pt] leading-[1.45] relative border border-stone-300 overflow-hidden">
+              {/* Optional Background Watermark */}
+              <PartyWatermarkDisplay config={activeLogoConfig} />
 
-              {/* Standard Header layout according to Huong dan 05-HD/VPTW */}
-              <div className="border-b border-stone-200/50 pb-4 mb-4">
-                <div className="flex justify-between items-start text-xs sm:text-sm">
-                  <div className="w-1/2 text-center font-bold text-slate-900 uppercase tracking-tight">
-                    <p className="text-xs">CƠ QUAN / CẤP ỦY ĐẢNG</p>
-                    <p className="text-[11px] text-stone-600 font-normal">HỆ THỐNG VĂN BẢN ĐẢNG 2026</p>
-                    <div className="w-16 h-[0.5px] bg-black mx-auto mt-1 mb-1"></div>
-                    <p className="text-[11px] font-normal italic">Căn cứ: Hướng dẫn 05-HD/VPTW</p>
-                  </div>
-                  <div className="w-1/2 text-center">
-                    <p className="font-bold text-xs uppercase tracking-tight">ĐỘC LẬP - TỰ DO - HẠNH PHÚC</p>
-                    <p className="font-bold text-sm text-red-950 uppercase mt-0.5">ĐẢNG CỘNG SẢN VIỆT NAM</p>
-                    <div className="w-24 h-[1px] bg-red-900 mx-auto mt-1 mb-1"></div>
-                    <p className="text-xs italic text-stone-700 mt-1">Ngày 27 tháng 5 năm 2026</p>
-                  </div>
+              {/* Top Center Logo / Emblem */}
+              {activeLogoConfig.enabled && activeLogoConfig.position === 'top-center' && (
+                <div className="mb-4 text-center select-none print:mb-2">
+                  <PartyLogoDisplay config={activeLogoConfig} className="mx-auto" />
                 </div>
-              </div>
+              )}
+
+              {/* Top Left Logo */}
+              {activeLogoConfig.enabled && activeLogoConfig.position === 'top-left' && (
+                <div className="mb-2 select-none">
+                  <PartyLogoDisplay config={activeLogoConfig} />
+                </div>
+              )}
 
               {/* Document Content */}
-              <div className="font-['Times_New_Roman',serif] text-slate-900 text-sm sm:text-base leading-relaxed whitespace-pre-wrap selection:bg-red-100">
+              <div className="font-['Times_New_Roman',serif] text-slate-900 text-sm sm:text-base leading-relaxed whitespace-pre-wrap selection:bg-red-100 relative z-10 text-justify">
                 {activeContent}
               </div>
 
               {/* PDF Footer Rule */}
-              <div className="mt-16 pt-3 border-t border-stone-300 flex items-center justify-between text-[11px] text-stone-500 font-sans">
+              <div className="mt-16 pt-3 border-t border-stone-300 flex items-center justify-between text-[11px] text-stone-500 font-sans relative z-10">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                  Chuẩn Hướng dẫn số 05-HD/VPTW (27/5/2026) & Quy định 399-QĐ/TW
+                  Chuẩn Hướng dẫn số 05-HD/VPTW (27/5/2026) & Quy định 399-QĐ/TW của Ban Bí thư
                 </span>
                 <span>Trang 1/1 • Khổ chuẩn A4</span>
               </div>

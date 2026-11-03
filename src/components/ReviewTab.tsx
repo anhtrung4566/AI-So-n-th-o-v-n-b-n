@@ -22,11 +22,17 @@ import {
   Flag,
   Type
 } from 'lucide-react';
-import { DocumentReviewResult, ReviewError, PartyDocumentType } from '../types';
+import { DocumentReviewResult, ReviewError, PartyDocumentType, PartyLogoConfig } from '../types';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
 import { exportToWordDocument, copyToClipboard } from '../utils/docxExporter';
 import { JsonModal } from './JsonModal';
 import { PdfViewerModal } from './PdfViewerModal';
+import {
+  PartyLogoDisplay,
+  PartyWatermarkDisplay,
+  DEFAULT_LOGO_CONFIG,
+  PartyEmblemSvg
+} from './PartyLogo';
 
 export const ReviewTab: React.FC = () => {
   const [inputText, setInputText] = useState<string>(PARTY_SAMPLE_DOCUMENTS[0].rawText);
@@ -43,6 +49,7 @@ export const ReviewTab: React.FC = () => {
   const [isJsonModalOpen, setIsJsonModalOpen] = useState<boolean>(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [logoConfig, setLogoConfig] = useState<PartyLogoConfig>(DEFAULT_LOGO_CONFIG);
 
   const wordCount = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const charCount = inputText.length;
@@ -553,6 +560,20 @@ export const ReviewTab: React.FC = () => {
                   </div>
 
                   <button
+                    type="button"
+                    onClick={() => setLogoConfig((c) => ({ ...c, enabled: !c.enabled }))}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1 shadow-2xs ${
+                      logoConfig.enabled
+                        ? 'bg-red-50 text-red-800 border-red-300'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                    title="Bật/Tắt hiển thị Huy hiệu Đảng trên bản xem trước"
+                  >
+                    <PartyEmblemSvg type={logoConfig.type} sizePx={14} />
+                    <span>Huy hiệu: {logoConfig.enabled ? 'Bật' : 'Tắt'}</span>
+                  </button>
+
+                  <button
                     onClick={handleCopyCorrected}
                     className="p-1.5 text-slate-700 hover:text-red-700 hover:bg-white rounded-lg transition-colors border border-slate-200 bg-white"
                     title="Sao chép văn bản đã sửa hoàn chỉnh"
@@ -588,10 +609,29 @@ export const ReviewTab: React.FC = () => {
               {activeView === 'corrected' && (
                 <div className="p-4 sm:p-6 bg-slate-200/70 overflow-x-auto flex justify-center">
                   <div
-                    className="admin-doc-page bg-white p-8 sm:p-12 rounded-lg border border-slate-300 shadow-md min-h-[480px] w-full max-w-2xl text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify"
+                    className="admin-doc-page bg-white p-8 sm:p-12 rounded-lg border border-slate-300 shadow-md min-h-[480px] w-full max-w-2xl text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify relative overflow-hidden"
                     style={{ fontSize: fontSize === '13pt' ? '13px' : '14px', lineHeight: 1.45 }}
                   >
-                    {reviewResult.full_corrected_text}
+                    {/* Optional Watermark */}
+                    <PartyWatermarkDisplay config={logoConfig} />
+
+                    {/* Top Center Logo / Emblem */}
+                    {logoConfig.enabled && logoConfig.position === 'top-center' && (
+                      <div className="mb-4 text-center select-none print:mb-2 relative z-10">
+                        <PartyLogoDisplay config={logoConfig} className="mx-auto" />
+                      </div>
+                    )}
+
+                    {/* Top Left Logo */}
+                    {logoConfig.enabled && logoConfig.position === 'top-left' && (
+                      <div className="mb-3 select-none relative z-10">
+                        <PartyLogoDisplay config={logoConfig} />
+                      </div>
+                    )}
+
+                    <div className="relative z-10">
+                      {reviewResult.full_corrected_text}
+                    </div>
                   </div>
                 </div>
               )}
@@ -787,6 +827,7 @@ export const ReviewTab: React.FC = () => {
           onClose={() => setIsPdfModalOpen(false)}
           documentTitle={`${reviewResult.document_type || 'Van_ban_Dang'}_Chuan_HD05_TW`}
           documentText={reviewResult.full_corrected_text}
+          logoConfig={logoConfig}
         />
       )}
     </div>
