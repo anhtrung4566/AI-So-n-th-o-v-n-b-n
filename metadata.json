@@ -1,0 +1,6 @@
+{
+  "name": "Trợ Lý Văn Phòng AI - Rà Soát Văn Bản Nghị Định 30/2020/NĐ-CP",
+  "description": "Hệ thống AI chuyên gia rà soát văn bản hành chính theo Nghị định 30/2020/NĐ-CP: phát hiện lỗi thể thức, viết hoa, trích yếu, số ký hiệu, căn cứ pháp lý và chuẩn hóa văn bản công vụ.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
