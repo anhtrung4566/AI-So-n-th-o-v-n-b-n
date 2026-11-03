@@ -26,6 +26,7 @@ import { DocumentReviewResult, ReviewError, PartyDocumentType } from '../types';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
 import { exportToWordDocument, copyToClipboard } from '../utils/docxExporter';
 import { JsonModal } from './JsonModal';
+import { PdfViewerModal } from './PdfViewerModal';
 
 export const ReviewTab: React.FC = () => {
   const [inputText, setInputText] = useState<string>(PARTY_SAMPLE_DOCUMENTS[0].rawText);
@@ -33,12 +34,14 @@ export const ReviewTab: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [reviewResult, setReviewResult] = useState<DocumentReviewResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'corrected' | 'diff' | 'errors' | 'json'>('corrected');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [copiedText, setCopiedText] = useState<boolean>(false);
   const [copiedErrorIndex, setCopiedErrorIndex] = useState<number | null>(null);
   const [isJsonModalOpen, setIsJsonModalOpen] = useState<boolean>(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const wordCount = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
@@ -92,9 +95,60 @@ export const ReviewTab: React.FC = () => {
     if (!file) return;
 
     setErrorMessage(null);
+    setUploadMessage(null);
 
-    if (file.name.endsWith('.docx')) {
+    const fileNameLower = file.name.toLowerCase();
+
+    // 1. PDF File Upload via Gemini Multimodal Extraction
+    if (fileNameLower.endsWith('.pdf')) {
       setIsUploading(true);
+      setUploadMessage(`Đang số hóa văn bản từ file PDF "${file.name}"...`);
+      try {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const dataUrl = reader.result as string;
+            const base64Data = dataUrl.split(',')[1] || '';
+
+            const res = await fetch('/api/parse-pdf', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ base64Data }),
+            });
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.error || 'Không thể trích xuất văn bản từ file PDF');
+            }
+
+            const data = await res.json();
+            if (!data.text || !data.text.trim()) {
+              throw new Error('File PDF không chứa văn bản hoặc là bản scan mờ. Vui lòng kiểm tra lại.');
+            }
+
+            setInputText(data.text);
+            setReviewResult(null);
+            setUploadMessage(`Đã số hóa thành công tệp PDF: ${file.name} (${data.text.length.toLocaleString('vi-VN')} ký tự)`);
+            setTimeout(() => setUploadMessage(null), 5000);
+          } catch (err: any) {
+            setErrorMessage('Lỗi khi đọc file PDF: ' + (err.message || 'Lỗi xử lý file PDF'));
+          } finally {
+            setIsUploading(false);
+          }
+        };
+        reader.onerror = () => {
+          setErrorMessage('Không thể đọc file PDF đã chọn');
+          setIsUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err: any) {
+        setErrorMessage('Không thể đọc file PDF: ' + err.message);
+        setIsUploading(false);
+      }
+    } else if (fileNameLower.endsWith('.docx') || fileNameLower.endsWith('.doc')) {
+      // 2. Word DOCX Upload via Mammoth
+      setIsUploading(true);
+      setUploadMessage(`Đang trích xuất nội dung từ tệp Word "${file.name}"...`);
       try {
         const reader = new FileReader();
         reader.onload = async () => {
@@ -108,38 +162,53 @@ export const ReviewTab: React.FC = () => {
               body: JSON.stringify({ base64Data }),
             });
 
-            if (!res.ok) throw new Error('Không thể đọc file Word .docx');
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.error || 'Không thể đọc file Word .docx');
+            }
+
             const data = await res.json();
+            if (!data.text || !data.text.trim()) {
+              throw new Error('Tệp Word trống hoặc không có nội dung chữ.');
+            }
+
             setInputText(data.text);
             setReviewResult(null);
+            setUploadMessage(`Đã tải tệp Word thành công: ${file.name} (${data.text.length.toLocaleString('vi-VN')} ký tự)`);
+            setTimeout(() => setUploadMessage(null), 5000);
           } catch (err: any) {
-            setErrorMessage('Không thể đọc tệp docx: ' + (err.message || 'Lỗi xử lý file Word'));
+            setErrorMessage('Không thể đọc tệp Word: ' + (err.message || 'Lỗi xử lý file Word'));
           } finally {
             setIsUploading(false);
           }
         };
         reader.onerror = () => {
-          setErrorMessage('Không thể đọc tệp tin đã chọn');
+          setErrorMessage('Không thể đọc tệp Word đã chọn');
           setIsUploading(false);
         };
         reader.readAsDataURL(file);
       } catch (err: any) {
-        setErrorMessage('Không thể đọc tệp docx: ' + err.message);
+        setErrorMessage('Không thể đọc tệp: ' + err.message);
         setIsUploading(false);
       }
     } else {
-      // Plain text or markdown
+      // 3. Plain text or Markdown
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
         setInputText(text);
         setReviewResult(null);
+        setUploadMessage(`Đã tải nội dung văn bản: ${file.name} (${text.length.toLocaleString('vi-VN')} ký tự)`);
+        setTimeout(() => setUploadMessage(null), 5000);
       };
       reader.onerror = () => {
         setErrorMessage('Không thể đọc tệp văn bản đã chọn');
       };
-      reader.readAsText(file);
+      reader.readAsText(file, 'utf-8');
     }
+
+    // Reset input target value so user can re-upload same file if desired
+    e.target.value = '';
   };
 
   const handleCopyCorrected = () => {
@@ -267,10 +336,10 @@ export const ReviewTab: React.FC = () => {
               <div className="flex items-center gap-2">
                 <label className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 rounded-lg border border-slate-300 transition-colors shadow-xs">
                   <Upload className="w-3.5 h-3.5 text-red-700" />
-                  <span>{isUploading ? 'Đang đọc...' : 'Tải file (.docx, .txt)'}</span>
+                  <span>{isUploading ? 'Đang đọc tệp...' : 'Tải file (.docx, .pdf, .txt)'}</span>
                   <input
                     type="file"
-                    accept=".docx,.txt"
+                    accept=".docx,.pdf,.txt,.doc"
                     onChange={handleFileUpload}
                     className="hidden"
                     disabled={isUploading}
@@ -284,6 +353,14 @@ export const ReviewTab: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Upload status message */}
+            {uploadMessage && (
+              <div className="mx-4 mt-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in duration-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-medium">{uploadMessage}</span>
+              </div>
+            )}
 
             {/* Textarea with authentic administrative font (Tinos / Times New Roman) */}
             <div className="p-4 flex-1">
@@ -483,6 +560,14 @@ export const ReviewTab: React.FC = () => {
                     {copiedText ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                   </button>
                   <button
+                    onClick={() => setIsPdfModalOpen(true)}
+                    className="px-2.5 py-1 text-xs font-semibold text-red-900 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 flex items-center gap-1 shadow-2xs"
+                    title="Xem bản in A4 và Lưu PDF chuẩn Hướng dẫn 05"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-red-700" />
+                    <span>Xem A4 / PDF</span>
+                  </button>
+                  <button
                     onClick={handleExportWord}
                     className="p-1.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-2xs"
                     title="Tải văn bản Word chuẩn format (.doc)"
@@ -619,7 +704,7 @@ export const ReviewTab: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Explanation based on Decree 30 or Party Guidance */}
+                        {/* Căn cứ quy chuẩn Hướng dẫn 05-HD/VPTW 2026 & Quy định 399-QĐ/TW */}
                         <p className="text-xs text-slate-700 mt-2 pt-2 border-t border-slate-200/80 leading-relaxed">
                           <strong className="text-slate-900 font-semibold">Căn cứ quy chuẩn: </strong>
                           {err.explanation}
@@ -657,24 +742,28 @@ export const ReviewTab: React.FC = () => {
             </div>
           ) : (
             /* Empty state / Welcome state */
-            <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center flex flex-col items-center justify-center min-h-[480px] text-slate-500">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-700 flex items-center justify-center mb-4">
+            <div className="bg-white rounded-2xl border border-dashed border-red-200 p-8 text-center flex flex-col items-center justify-center min-h-[480px] text-slate-500">
+              <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-800 flex items-center justify-center mb-4 border border-red-200 shadow-sm">
                 <FileCheck className="w-8 h-8" />
               </div>
-              <h3 className="text-base font-bold text-slate-800 mb-1">
-                Sẵn Sàng Rà Soát Văn Bản
+              <h3 className="text-base font-bold text-slate-900 mb-1">
+                Sẵn Sàng Rà Soát Thể Thức Văn Bản Đảng
               </h3>
-              <p className="text-xs text-slate-500 max-w-sm mb-6 leading-relaxed">
-                Nhập nội dung ở khung bên trái hoặc chọn văn bản mẫu (Khối Nhà nước hoặc Khối Đảng) để hệ thống tự động phân tích và bắt lỗi thể thức.
+              <p className="text-xs text-slate-600 max-w-md mb-6 leading-relaxed">
+                Nhập nội dung vào khung bên trái hoặc bấm <strong className="text-red-800">"Tải file (.docx, .pdf, .txt)"</strong> để hệ thống chuyên sâu tự động rà soát, chỉ rõ sai sót và xuất văn bản chuẩn 100%.
               </p>
-              <div className="grid grid-cols-2 gap-3 text-left max-w-md w-full">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                  <span className="font-bold text-slate-800 block mb-1">🏢 Khối Nhà Nước (NĐ 30)</span>
-                  <p className="text-slate-500 text-[11px]">Quốc hiệu, tiêu ngữ, số ký hiệu /QĐ-UBND, trích yếu, nơi nhận...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-lg w-full">
+                <div className="p-3.5 bg-red-50/70 rounded-xl border border-red-200 text-xs">
+                  <span className="font-bold text-red-950 block mb-1">🚩 Hướng dẫn số 05-HD/VPTW (27/5/2026)</span>
+                  <p className="text-slate-700 text-[11px] leading-relaxed">
+                    Tiêu ngữ bắt buộc "ĐẢNG CỘNG SẢN VIỆT NAM", số ký hiệu dấu gạch nối (Số: 45-QĐ/TU), thể thức trích yếu, bố cục trình bày và nơi nhận.
+                  </p>
                 </div>
-                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-xs">
-                  <span className="font-bold text-amber-900 block mb-1">🚩 Khối Cơ Quan Đảng (QĐ 66)</span>
-                  <p className="text-slate-600 text-[11px]">Không quốc hiệu, số -QĐ/TU, đề ký T/M Ban Thường vụ, thẩm quyền...</p>
+                <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 text-xs">
+                  <span className="font-bold text-amber-950 block mb-1">⚖️ Quy định số 399-QĐ/TW (09/01/2026)</span>
+                  <p className="text-slate-700 text-[11px] leading-relaxed">
+                    Thẩm quyền ban hành, thẩm quyền ký (T/M Ban Thường vụ, T/M Đảng ủy...), căn cứ Điều lệ Đảng và chuẩn hóa văn phong công tác Đảng.
+                  </p>
                 </div>
               </div>
             </div>
@@ -688,6 +777,16 @@ export const ReviewTab: React.FC = () => {
           isOpen={isJsonModalOpen}
           onClose={() => setIsJsonModalOpen(false)}
           data={reviewResult}
+        />
+      )}
+
+      {/* PDF Viewer & Print Modal */}
+      {reviewResult && (
+        <PdfViewerModal
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+          documentTitle={`${reviewResult.document_type || 'Van_ban_Dang'}_Chuan_HD05_TW`}
+          documentText={reviewResult.full_corrected_text}
         />
       )}
     </div>

@@ -95,7 +95,7 @@ export function exportToWordDocument(title: string, content: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const fileName = `${title.replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9-]/g, '_')}_ChuanND30.doc`;
+  const fileName = `${title.replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9-]/g, '_')}_ChuanHD05_TW.doc`;
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
