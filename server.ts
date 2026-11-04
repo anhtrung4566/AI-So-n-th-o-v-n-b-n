@@ -75,7 +75,14 @@ const CANDIDATE_MODELS = [
   'gemini-1.5-flash',
 ];
 
+let lastGeminiFailureTime = 0;
+const GEMINI_COOLDOWN_MS = 60000; // 60s cooldown if Gemini key lacks permission or fails
+
 async function callGeminiWithFallback(ai: GoogleGenAI, requestConfig: any) {
+  if (Date.now() - lastGeminiFailureTime < GEMINI_COOLDOWN_MS) {
+    throw new Error('Gemini API is currently in fast cooldown, activating instant deterministic Party engine');
+  }
+
   let lastError: any = null;
 
   for (const model of CANDIDATE_MODELS) {
@@ -97,8 +104,15 @@ async function callGeminiWithFallback(ai: GoogleGenAI, requestConfig: any) {
       lastError = err;
       const errMsg = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
       console.warn(`[Gemini Fallback] Model "${model}" failed/timed out:`, errMsg.slice(0, 100));
-      // If it's an auth/scope/quota error, don't waste time on remaining models
-      if (errMsg.includes('403') || errMsg.includes('insufficient') || errMsg.includes('PERMISSION_DENIED')) {
+      // If it's an auth/scope/quota error, trigger cooldown and break immediately
+      if (
+        errMsg.includes('403') ||
+        errMsg.includes('insufficient') ||
+        errMsg.includes('PERMISSION_DENIED') ||
+        errMsg.includes('API key') ||
+        errMsg.includes('429')
+      ) {
+        lastGeminiFailureTime = Date.now();
         break;
       }
     }

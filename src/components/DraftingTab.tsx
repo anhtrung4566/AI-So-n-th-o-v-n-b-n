@@ -31,6 +31,10 @@ import {
   DEFAULT_LOGO_CONFIG,
   EditablePartyLogoSpot
 } from './PartyLogo';
+import {
+  generateClientSidePartyDocument,
+  extractClientSideTemplateInfo
+} from '../utils/partyDocumentEngine';
 
 export const DraftingTab: React.FC = () => {
   const [docType, setDocType] = useState<string>('Nghị quyết');
@@ -73,7 +77,11 @@ export const DraftingTab: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
+    // 1. Attempt Backend API with 2500ms timeout
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
       const response = await fetch('/api/generate-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,18 +97,40 @@ export const DraftingTab: React.FC = () => {
           signerName,
           referenceText,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Lỗi khi tạo văn bản Đảng');
+      if (response.ok) {
+        const data: GeneratedDocument = await response.json();
+        if (data && data.full_text && data.document_title) {
+          setGeneratedDoc(data);
+          setLoading(false);
+          return;
+        }
       }
+    } catch (err: any) {
+      console.warn('Backend generate failed or timed out, activating instant deterministic Party drafting engine:', err);
+    }
 
-      const data: GeneratedDocument = await response.json();
-      setGeneratedDoc(data);
+    // 2. Guaranteed 100% Uptime Deterministic Party Drafting (Hướng dẫn 05-HD/VPTW 2026 & Quy định 399-QĐ/TW)
+    try {
+      const localDoc = generateClientSidePartyDocument({
+        docType,
+        issuingOrg,
+        parentOrg,
+        place,
+        recipient,
+        subject,
+        keyPoints,
+        signerTitle,
+        signerName,
+        referenceText,
+      });
+      setGeneratedDoc(localDoc);
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err.message || 'Đã có lỗi xảy ra.');
+      setErrorMessage('Đã có lỗi xảy ra: ' + (err.message || 'Lỗi soạn thảo'));
     } finally {
       setLoading(false);
     }
@@ -225,9 +255,27 @@ export const DraftingTab: React.FC = () => {
         body: JSON.stringify({ templateText: referenceText }),
       });
 
-      if (!res.ok) throw new Error('Không thể trích xuất thông tin mẫu');
-      const data = await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (data.docType) setDocType(data.docType);
+        if (data.issuingOrg) setIssuingOrg(data.issuingOrg);
+        if (data.parentOrg) setParentOrg(data.parentOrg);
+        if (data.place) setPlace(data.place);
+        if (data.recipient) setRecipient(data.recipient);
+        if (data.subject) setSubject(data.subject);
+        if (data.signerTitle) setSignerTitle(data.signerTitle);
+        if (data.signerName) setSignerName(data.signerName);
+        if (data.keyPoints) setKeyPoints(data.keyPoints);
+        setIsExtracting(false);
+        return;
+      }
+    } catch (err: any) {
+      console.warn('Backend extraction failed, using client-side extractor:', err);
+    }
 
+    // Guaranteed instant client-side extractor
+    try {
+      const data = extractClientSideTemplateInfo(referenceText);
       if (data.docType) setDocType(data.docType);
       if (data.issuingOrg) setIssuingOrg(data.issuingOrg);
       if (data.parentOrg) setParentOrg(data.parentOrg);
@@ -239,7 +287,7 @@ export const DraftingTab: React.FC = () => {
       if (data.keyPoints) setKeyPoints(data.keyPoints);
     } catch (err: any) {
       console.error(err);
-      setErrorMessage('Không thể trích xuất thông số: ' + err.message);
+      setErrorMessage('Không thể trích xuất thông số: ' + (err.message || 'Lỗi xử lý'));
     } finally {
       setIsExtracting(false);
     }

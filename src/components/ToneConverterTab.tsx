@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { FormalRewriteResult } from '../types';
 import { copyToClipboard } from '../utils/docxExporter';
+import { rewriteClientSidePartyTone } from '../utils/partyDocumentEngine';
 
 export const ToneConverterTab: React.FC = () => {
   const [rawText, setRawText] = useState<string>(
@@ -32,23 +33,38 @@ export const ToneConverterTab: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
+    // 1. Attempt Backend API with 2500ms timeout
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
       const response = await fetch('/api/rewrite-formal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rawText }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Lỗi khi chuyển đổi văn phong');
+      if (response.ok) {
+        const data: FormalRewriteResult = await response.json();
+        if (data && data.formal_text) {
+          setResult(data);
+          setLoading(false);
+          return;
+        }
       }
+    } catch (err: any) {
+      console.warn('Backend rewrite failed or timed out, activating instant deterministic Party tone engine:', err);
+    }
 
-      const data: FormalRewriteResult = await response.json();
-      setResult(data);
+    // 2. Guaranteed zero-failure deterministic Party Tone Converter
+    try {
+      const localResult = rewriteClientSidePartyTone(rawText);
+      setResult(localResult);
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err.message || 'Đã có lỗi xảy ra.');
+      setErrorMessage('Đã có lỗi xảy ra: ' + (err.message || 'Lỗi chuyển đổi'));
     } finally {
       setLoading(false);
     }

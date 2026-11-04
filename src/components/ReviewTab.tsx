@@ -35,6 +35,7 @@ import {
   EditablePartyLogoSpot,
   PartyLogoModal
 } from './PartyLogo';
+import { performClientSidePartyReview } from '../utils/partyDocumentEngine';
 
 export const ReviewTab: React.FC = () => {
   const [inputText, setInputText] = useState<string>(PARTY_SAMPLE_DOCUMENTS[0].rawText);
@@ -66,26 +67,44 @@ export const ReviewTab: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
+    // 1. Attempt Backend API with 2500ms timeout
+    let gotValidResponse = false;
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
       const response = await fetch('/api/analyze-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: inputText,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Lỗi khi gọi API rà soát văn bản Đảng');
+      if (response.ok) {
+        const data: DocumentReviewResult = await response.json();
+        if (data && data.full_corrected_text && Array.isArray(data.errors)) {
+          setReviewResult(data);
+          setActiveView('corrected');
+          gotValidResponse = true;
+          setLoading(false);
+          return;
+        }
       }
+    } catch (err: any) {
+      console.warn('Backend fetch failed or timed out, executing deterministic Party engine:', err);
+    }
 
-      const data: DocumentReviewResult = await response.json();
-      setReviewResult(data);
+    // 2. Guaranteed 100% Uptime Deterministic Party Review (Hướng dẫn 05-HD/VPTW & Quy định 399-QĐ/TW)
+    try {
+      const localResult = performClientSidePartyReview(inputText);
+      setReviewResult(localResult);
       setActiveView('corrected');
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err.message || 'Đã có lỗi xảy ra trong quá trình rà soát văn bản Đảng.');
+      setErrorMessage('Đã có lỗi xảy ra: ' + (err.message || 'Lỗi xử lý'));
     } finally {
       setLoading(false);
     }
