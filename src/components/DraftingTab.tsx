@@ -29,6 +29,7 @@ import {
   extractClientSideTemplateInfo
 } from '../utils/partyDocumentEngine';
 import { AiEngineSelector, AiModelBadge, AiEngineType, AiModelType } from './AiEngineSelector';
+import { PartyDocumentSheetView } from './PartyDocumentSheetView';
 import { Bot } from 'lucide-react';
 
 export const DraftingTab: React.FC = () => {
@@ -782,10 +783,8 @@ export const DraftingTab: React.FC = () => {
           {/* Document Content rendered with crisp font-admin (Tinos / Times New Roman) */}
           <div className="p-6 bg-slate-200/60 min-h-[580px] flex justify-center overflow-x-auto">
             {generatedDoc ? (
-              <div className="w-full max-w-2xl bg-white p-8 sm:p-12 shadow-md rounded-lg border border-slate-300 font-admin text-slate-900 text-sm leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify relative overflow-hidden">
-                <div className="relative z-10">
-                  {generatedDoc.full_text}
-                </div>
+              <div className="w-full max-w-2xl space-y-4">
+                <PartyDocumentSheetView content={generatedDoc.full_text} fontSize="13pt" />
 
                 {/* Notes */}
                 {generatedDoc.notes && generatedDoc.notes.length > 0 && (

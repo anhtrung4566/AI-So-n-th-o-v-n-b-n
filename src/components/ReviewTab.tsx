@@ -30,6 +30,7 @@ import { JsonModal } from './JsonModal';
 import { PdfViewerModal } from './PdfViewerModal';
 import { performClientSidePartyReview } from '../utils/partyDocumentEngine';
 import { AiEngineSelector, AiModelBadge, AiEngineType, AiModelType } from './AiEngineSelector';
+import { PartyDocumentSheetView } from './PartyDocumentSheetView';
 
 export const ReviewTab: React.FC = () => {
   const [inputText, setInputText] = useState<string>(PARTY_SAMPLE_DOCUMENTS[0].rawText);
@@ -258,7 +259,7 @@ export const ReviewTab: React.FC = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    setIsPdfModalOpen(true);
   };
 
   // Filter errors
@@ -638,14 +639,10 @@ export const ReviewTab: React.FC = () => {
               {/* View 1: Full Corrected Text with Authentic Administrative Page Proportions */}
               {activeView === 'corrected' && (
                 <div className="p-4 sm:p-6 bg-slate-200/70 overflow-x-auto flex justify-center">
-                  <div
-                    className="admin-doc-page bg-white p-8 sm:p-12 rounded-lg border border-slate-300 shadow-md min-h-[480px] w-full max-w-2xl text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify relative overflow-hidden"
-                    style={{ fontSize: fontSize === '13pt' ? '13px' : '14px', lineHeight: 1.45 }}
-                  >
-                    <div className="relative z-10">
-                      {reviewResult.full_corrected_text}
-                    </div>
-                  </div>
+                  <PartyDocumentSheetView
+                    content={reviewResult.full_corrected_text}
+                    fontSize={fontSize}
+                  />
                 </div>
               )}
 

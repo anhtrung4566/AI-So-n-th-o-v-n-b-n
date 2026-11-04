@@ -18,6 +18,7 @@ import {
   Sliders
 } from 'lucide-react';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
+import { parsePartyDocumentText, generatePartyDocumentHtml } from '../utils/partyDocumentFormatter';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
@@ -48,34 +49,31 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const activeContent = documentText || currentPreset?.rawText || '';
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      window.print();
-      return;
-    }
+    const parsed = parsePartyDocumentText(activeContent);
+    const bodyHtml = generatePartyDocumentHtml(parsed);
 
     const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <title>${activeTitle}</title>
           <style>
             @page {
               size: A4 portrait;
-              margin: 20mm 15mm 20mm 25mm; /* Chuẩn thể thức Đảng: Trên 20, Dưới 20, Phải 15, Trái 25 */
+              margin: 20mm 15mm 20mm 30mm; /* Chuẩn Hướng dẫn số 05-HD/VPTW: Trên 20mm, Dưới 20mm, Trái 30mm, Phải 15mm */
             }
             body {
               font-family: "Times New Roman", Times, serif;
-              font-size: 14pt;
-              line-height: 1.45;
+              font-size: 13pt;
+              line-height: 1.35;
               color: #000;
               margin: 0;
-              padding: 10px;
+              padding: 0;
             }
-            .content {
-              text-align: justify;
-              white-space: pre-wrap;
-              font-size: 14pt;
+            table {
+              border-collapse: collapse;
+              border: none;
             }
             @media print {
               body { padding: 0; }
@@ -83,18 +81,35 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </style>
         </head>
         <body>
-          <div class="content">${activeContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-          <script>
-            window.onload = function() {
-              window.print();
-            };
-          </script>
+          ${bodyHtml}
         </body>
       </html>
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const frameDoc = printFrame.contentWindow?.document || printFrame.contentDocument;
+    if (frameDoc) {
+      frameDoc.open();
+      frameDoc.write(htmlContent);
+      frameDoc.close();
+      setTimeout(() => {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+        setTimeout(() => {
+          if (document.body.contains(printFrame)) {
+            document.body.removeChild(printFrame);
+          }
+        }, 1500);
+      }, 350);
+    }
   };
 
   const handleDownloadTxt = () => {
@@ -227,11 +242,14 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             className="transition-transform duration-150 ease-out"
           >
             {/* The A4 Simulation Sheet */}
-            <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl p-[20mm_15mm_20mm_25mm] font-serif text-[14pt] leading-[1.45] relative border border-stone-300 overflow-hidden">
-              {/* Document Content */}
-              <div className="font-['Times_New_Roman',serif] text-slate-900 text-sm sm:text-base leading-relaxed whitespace-pre-wrap selection:bg-red-100 relative z-10 text-justify">
-                {activeContent}
-              </div>
+            <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl p-[20mm_15mm_20mm_30mm] font-serif text-[13pt] leading-[1.35] relative border border-stone-300 overflow-hidden">
+              {/* Document Content formatted strictly to 2-column Party layout */}
+              <div
+                className="font-['Times_New_Roman',serif] text-slate-900 selection:bg-red-100 relative z-10 text-justify"
+                dangerouslySetInnerHTML={{
+                  __html: generatePartyDocumentHtml(parsePartyDocumentText(activeContent)),
+                }}
+              />
 
               {/* PDF Footer Rule */}
               <div className="mt-16 pt-3 border-t border-stone-300 flex items-center justify-between text-[11px] text-stone-500 font-sans relative z-10">
