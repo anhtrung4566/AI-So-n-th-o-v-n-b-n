@@ -23,19 +23,11 @@ import {
   Type,
   Bot
 } from 'lucide-react';
-import { DocumentReviewResult, ReviewError, PartyDocumentType, PartyLogoConfig } from '../types';
+import { DocumentReviewResult, ReviewError, PartyDocumentType } from '../types';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
 import { exportToWordDocument, copyToClipboard } from '../utils/docxExporter';
 import { JsonModal } from './JsonModal';
 import { PdfViewerModal } from './PdfViewerModal';
-import {
-  PartyLogoDisplay,
-  PartyWatermarkDisplay,
-  DEFAULT_LOGO_CONFIG,
-  PartyEmblemSvg,
-  EditablePartyLogoSpot,
-  PartyLogoModal
-} from './PartyLogo';
 import { performClientSidePartyReview } from '../utils/partyDocumentEngine';
 import { AiEngineSelector, AiModelBadge, AiEngineType, AiModelType } from './AiEngineSelector';
 
@@ -45,7 +37,6 @@ export const ReviewTab: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedEngine, setSelectedEngine] = useState<AiEngineType>('gemini');
   const [selectedModel, setSelectedModel] = useState<AiModelType>('gemini-flash');
-  const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
   const [reviewResult, setReviewResult] = useState<DocumentReviewResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
@@ -57,7 +48,6 @@ export const ReviewTab: React.FC = () => {
   const [isJsonModalOpen, setIsJsonModalOpen] = useState<boolean>(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [logoConfig, setLogoConfig] = useState<PartyLogoConfig>(DEFAULT_LOGO_CONFIG);
 
   const wordCount = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const charCount = inputText.length;
@@ -614,20 +604,6 @@ export const ReviewTab: React.FC = () => {
                   </div>
 
                   <button
-                    type="button"
-                    onClick={() => setIsLogoModalOpen(true)}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1 shadow-2xs ${
-                      logoConfig.enabled
-                        ? 'bg-red-50 text-red-800 border-red-300 hover:bg-red-100'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                    title="Nhấp để thay đổi mẫu Huy hiệu hoặc tải ảnh Logo riêng"
-                  >
-                    <PartyEmblemSvg type={logoConfig.type} sizePx={14} />
-                    <span>Huy hiệu: {logoConfig.enabled ? 'Bật' : 'Tắt'} (Đổi)</span>
-                  </button>
-
-                  <button
                     onClick={handleCopyCorrected}
                     className="p-1.5 text-slate-700 hover:text-red-700 hover:bg-white rounded-lg transition-colors border border-slate-200 bg-white"
                     title="Sao chép văn bản đã sửa hoàn chỉnh"
@@ -666,15 +642,6 @@ export const ReviewTab: React.FC = () => {
                     className="admin-doc-page bg-white p-8 sm:p-12 rounded-lg border border-slate-300 shadow-md min-h-[480px] w-full max-w-2xl text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify relative overflow-hidden"
                     style={{ fontSize: fontSize === '13pt' ? '13px' : '14px', lineHeight: 1.45 }}
                   >
-                    {/* Optional Watermark */}
-                    <PartyWatermarkDisplay config={logoConfig} />
-
-                    {/* Direct Editable Logo / Emblem Spot on Document Sheet */}
-                    <EditablePartyLogoSpot
-                      config={logoConfig}
-                      onChange={setLogoConfig}
-                    />
-
                     <div className="relative z-10">
                       {reviewResult.full_corrected_text}
                     </div>
@@ -873,18 +840,8 @@ export const ReviewTab: React.FC = () => {
           onClose={() => setIsPdfModalOpen(false)}
           documentTitle={`${reviewResult.document_type || 'Van_ban_Dang'}_Chuan_HD05_TW`}
           documentText={reviewResult.full_corrected_text}
-          logoConfig={logoConfig}
-          onLogoConfigChange={setLogoConfig}
         />
       )}
-
-      {/* Direct Party Logo Customization Modal */}
-      <PartyLogoModal
-        isOpen={isLogoModalOpen}
-        onClose={() => setIsLogoModalOpen(false)}
-        config={logoConfig}
-        onChange={setLogoConfig}
-      />
     </div>
   );
 };

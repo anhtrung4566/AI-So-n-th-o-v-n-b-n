@@ -20,17 +20,10 @@ import {
   Trash2,
   AlertCircle
 } from 'lucide-react';
-import { GeneratedDocument, PartyLogoConfig } from '../types';
+import { GeneratedDocument } from '../types';
 import { PARTY_SAMPLE_DOCUMENTS, PARTY_DOCUMENT_TYPES_CATALOG } from '../data/partyHandbook';
 import { exportToWordDocument, copyToClipboard } from '../utils/docxExporter';
 import { PdfViewerModal } from './PdfViewerModal';
-import {
-  PartyLogoSelector,
-  PartyLogoDisplay,
-  PartyWatermarkDisplay,
-  DEFAULT_LOGO_CONFIG,
-  EditablePartyLogoSpot
-} from './PartyLogo';
 import {
   generateClientSidePartyDocument,
   extractClientSideTemplateInfo
@@ -52,9 +45,6 @@ export const DraftingTab: React.FC = () => {
   );
   const [signerTitle, setSignerTitle] = useState<string>('T/M BAN THƯỜNG VỤ\nBÍ THƯ');
   const [signerName, setSignerName] = useState<string>('Trần Đình Sơn');
-
-  // Party Logo & Emblem Configuration State
-  const [logoConfig, setLogoConfig] = useState<PartyLogoConfig>(DEFAULT_LOGO_CONFIG);
 
   // Reference Template State (Tính năng thêm văn bản mẫu tham khảo)
   const [referenceText, setReferenceText] = useState<string>('');
@@ -683,8 +673,6 @@ export const DraftingTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Party Logo & Emblem Configuration Card */}
-          <PartyLogoSelector config={logoConfig} onChange={setLogoConfig} />
 
           {errorMessage && (
             <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 flex items-start justify-between gap-3 shadow-xs">
@@ -795,15 +783,6 @@ export const DraftingTab: React.FC = () => {
           <div className="p-6 bg-slate-200/60 min-h-[580px] flex justify-center overflow-x-auto">
             {generatedDoc ? (
               <div className="w-full max-w-2xl bg-white p-8 sm:p-12 shadow-md rounded-lg border border-slate-300 font-admin text-slate-900 text-sm leading-relaxed whitespace-pre-wrap selection:bg-amber-100 text-justify relative overflow-hidden">
-                {/* Optional Watermark */}
-                <PartyWatermarkDisplay config={logoConfig} />
-
-                {/* Direct Editable Logo / Emblem Spot on Document Sheet */}
-                <EditablePartyLogoSpot
-                  config={logoConfig}
-                  onChange={setLogoConfig}
-                />
-
                 <div className="relative z-10">
                   {generatedDoc.full_text}
                 </div>
@@ -845,8 +824,6 @@ export const DraftingTab: React.FC = () => {
         onClose={() => setIsPdfModalOpen(false)}
         documentTitle={pdfModalTitle}
         documentText={pdfModalContent}
-        logoConfig={logoConfig}
-        onLogoConfigChange={setLogoConfig}
         onApplyReference={(text) => {
           setReferenceText(text);
           setShowReferenceBox(true);

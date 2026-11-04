@@ -18,23 +18,12 @@ import {
   Sliders
 } from 'lucide-react';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
-import { PartyLogoConfig } from '../types';
-import {
-  PartyLogoDisplay,
-  PartyWatermarkDisplay,
-  DEFAULT_LOGO_CONFIG,
-  PartyEmblemSvg,
-  EditablePartyLogoSpot,
-  PartyLogoModal
-} from './PartyLogo';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
   documentTitle?: string;
   documentText?: string;
-  logoConfig?: PartyLogoConfig;
-  onLogoConfigChange?: (config: PartyLogoConfig) => void;
   onApplyReference?: (text: string) => void;
 }
 
@@ -43,8 +32,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   onClose,
   documentTitle,
   documentText,
-  logoConfig: initialLogoConfig,
-  onLogoConfigChange,
   onApplyReference,
 }) => {
   const [selectedPresetId, setSelectedPresetId] = useState<string>(
@@ -52,19 +39,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   );
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [copied, setCopied] = useState<boolean>(false);
-  const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
-  const [modalLogoConfig, setModalLogoConfig] = useState<PartyLogoConfig>(
-    initialLogoConfig || DEFAULT_LOGO_CONFIG
-  );
-
-  const handleUpdateLogoConfig = (newConfig: PartyLogoConfig) => {
-    setModalLogoConfig(newConfig);
-    onLogoConfigChange?.(newConfig);
-  };
 
   if (!isOpen) return null;
-
-  const activeLogoConfig = modalLogoConfig;
 
   // Determine current document
   const currentPreset = PARTY_SAMPLE_DOCUMENTS.find((p) => p.id === selectedPresetId);
@@ -76,18 +52,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     if (!printWindow) {
       window.print();
       return;
-    }
-
-    let logoHtml = '';
-    if (activeLogoConfig.enabled) {
-      const sizePx = activeLogoConfig.size === 'sm' ? 40 : activeLogoConfig.size === 'lg' ? 68 : 52;
-      if (activeLogoConfig.position === 'top-center') {
-        if (activeLogoConfig.type === 'custom' && activeLogoConfig.customImageDataUrl) {
-          logoHtml = `<div style="text-align: center; margin-bottom: 12px;"><img src="${activeLogoConfig.customImageDataUrl}" style="height: ${sizePx}px; object-fit: contain;" /></div>`;
-        } else {
-          logoHtml = `<div style="text-align: center; margin-bottom: 12px;"><svg width="${sizePx}" height="${sizePx}" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48" fill="#DC2626" stroke="#B45309" stroke-width="2"/><g fill="#FDE047"><path d="M26 77 C24 75, 25 72, 28 69 L67 30 C70 27, 73 28, 75 30 L77 32 C79 34, 78 37, 75 40 L36 79 C33 82, 30 81, 28 79 Z"/><path d="M58 21 L77 40 L70 47 L65 42 L62 45 L58 41 L61 38 L56 33 L51 38 L47 34 L54 27 L51 24 Z"/></g><g fill="#FACC15"><path d="M74 74 C72 72, 73 68, 76 65 L81 60 C83 58, 86 59, 88 61 L89 62 C91 64, 90 67, 88 70 L83 75 C80 78, 77 77, 74 74 Z"/><path d="M77 62 C74 48, 62 33, 47 26 C35 20, 23 23, 19 28 C16 32, 19 36, 24 35 C32 34, 43 38, 50 48 C55 55, 56 65, 53 72 C50 78, 43 83, 37 83 C33 83, 30 80, 27 76 C25 73, 21 73, 20 76 C19 79, 21 84, 26 88 C34 94, 46 93, 56 86 C67 79, 75 70, 77 62 Z"/></g></svg></div>`;
-        }
-      }
     }
 
     const htmlContent = `
@@ -119,7 +83,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </style>
         </head>
         <body>
-          ${logoHtml}
           <div class="content">${activeContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
           <script>
             window.onload = function() {
@@ -255,31 +218,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               <span className="text-amber-300 italic font-serif truncate max-w-sm">{activeTitle}</span>
             </div>
           )}
-
-          {/* Quick Logo Options inside Modal */}
-          <div className="flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-red-900/40 ml-auto">
-            <PartyEmblemSvg type={activeLogoConfig.type} sizePx={16} />
-            <span className="text-amber-200 font-medium text-[11px]">Huy hiệu / Logo:</span>
-            <button
-              type="button"
-              onClick={() => handleUpdateLogoConfig({ ...activeLogoConfig, enabled: !activeLogoConfig.enabled })}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
-                activeLogoConfig.enabled
-                  ? 'bg-red-700 text-white'
-                  : 'bg-slate-800 text-stone-400 hover:text-white'
-              }`}
-            >
-              {activeLogoConfig.enabled ? 'Bật' : 'Tắt'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsLogoModalOpen(true)}
-              className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 transition flex items-center gap-1 shadow-2xs"
-              title="Mở bảng chọn biểu trưng hoặc tải ảnh logo riêng"
-            >
-              <span>✏️ Thay đổi / Tải ảnh</span>
-            </button>
-          </div>
         </div>
 
         {/* PDF Viewer Body */}
@@ -290,15 +228,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           >
             {/* The A4 Simulation Sheet */}
             <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl p-[20mm_15mm_20mm_25mm] font-serif text-[14pt] leading-[1.45] relative border border-stone-300 overflow-hidden">
-              {/* Optional Background Watermark */}
-              <PartyWatermarkDisplay config={activeLogoConfig} />
-
-              {/* Editable Logo / Emblem Spot directly on the A4 PDF sheet */}
-              <EditablePartyLogoSpot
-                config={activeLogoConfig}
-                onChange={handleUpdateLogoConfig}
-              />
-
               {/* Document Content */}
               <div className="font-['Times_New_Roman',serif] text-slate-900 text-sm sm:text-base leading-relaxed whitespace-pre-wrap selection:bg-red-100 relative z-10 text-justify">
                 {activeContent}
@@ -346,14 +275,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Direct Party Logo Modal */}
-      <PartyLogoModal
-        isOpen={isLogoModalOpen}
-        onClose={() => setIsLogoModalOpen(false)}
-        config={activeLogoConfig}
-        onChange={handleUpdateLogoConfig}
-      />
     </div>
   );
 };
