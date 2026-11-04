@@ -23,7 +23,9 @@ import {
   PartyLogoDisplay,
   PartyWatermarkDisplay,
   DEFAULT_LOGO_CONFIG,
-  PartyEmblemSvg
+  PartyEmblemSvg,
+  EditablePartyLogoSpot,
+  PartyLogoModal
 } from './PartyLogo';
 
 interface PdfViewerModalProps {
@@ -32,6 +34,7 @@ interface PdfViewerModalProps {
   documentTitle?: string;
   documentText?: string;
   logoConfig?: PartyLogoConfig;
+  onLogoConfigChange?: (config: PartyLogoConfig) => void;
   onApplyReference?: (text: string) => void;
 }
 
@@ -41,6 +44,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   documentTitle,
   documentText,
   logoConfig: initialLogoConfig,
+  onLogoConfigChange,
   onApplyReference,
 }) => {
   const [selectedPresetId, setSelectedPresetId] = useState<string>(
@@ -48,9 +52,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   );
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
   const [modalLogoConfig, setModalLogoConfig] = useState<PartyLogoConfig>(
     initialLogoConfig || DEFAULT_LOGO_CONFIG
   );
+
+  const handleUpdateLogoConfig = (newConfig: PartyLogoConfig) => {
+    setModalLogoConfig(newConfig);
+    onLogoConfigChange?.(newConfig);
+  };
 
   if (!isOpen) return null;
 
@@ -252,7 +262,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             <span className="text-amber-200 font-medium text-[11px]">Huy hiệu / Logo:</span>
             <button
               type="button"
-              onClick={() => setModalLogoConfig((c) => ({ ...c, enabled: !c.enabled }))}
+              onClick={() => handleUpdateLogoConfig({ ...activeLogoConfig, enabled: !activeLogoConfig.enabled })}
               className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
                 activeLogoConfig.enabled
                   ? 'bg-red-700 text-white'
@@ -261,34 +271,14 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             >
               {activeLogoConfig.enabled ? 'Bật' : 'Tắt'}
             </button>
-            {activeLogoConfig.enabled && (
-              <div className="flex items-center gap-1 border-l border-slate-700 pl-2">
-                <button
-                  type="button"
-                  onClick={() => setModalLogoConfig((c) => ({ ...c, type: 'party-emblem-gold', position: 'top-center' }))}
-                  className={`px-1.5 py-0.5 rounded text-[10px] ${activeLogoConfig.type === 'party-emblem-gold' && activeLogoConfig.position === 'top-center' ? 'bg-amber-400 text-slate-950 font-bold' : 'text-stone-300 hover:text-white'}`}
-                  title="Búa Liềm Vàng-Đỏ đỉnh trang"
-                >
-                  Đỉnh Vàng-Đỏ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalLogoConfig((c) => ({ ...c, type: 'party-emblem-monochrome', position: 'top-center' }))}
-                  className={`px-1.5 py-0.5 rounded text-[10px] ${activeLogoConfig.type === 'party-emblem-monochrome' && activeLogoConfig.position === 'top-center' ? 'bg-slate-200 text-slate-950 font-bold' : 'text-stone-300 hover:text-white'}`}
-                  title="Đơn sắc in ấn"
-                >
-                  Đơn Sắc
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalLogoConfig((c) => ({ ...c, position: 'watermark-center' }))}
-                  className={`px-1.5 py-0.5 rounded text-[10px] ${activeLogoConfig.position === 'watermark-center' ? 'bg-red-800 text-amber-200 font-bold' : 'text-stone-300 hover:text-white'}`}
-                  title="Dấu chìm mờ trung tâm"
-                >
-                  Dấu Chìm
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsLogoModalOpen(true)}
+              className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 transition flex items-center gap-1 shadow-2xs"
+              title="Mở bảng chọn biểu trưng hoặc tải ảnh logo riêng"
+            >
+              <span>✏️ Thay đổi / Tải ảnh</span>
+            </button>
           </div>
         </div>
 
@@ -303,19 +293,11 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               {/* Optional Background Watermark */}
               <PartyWatermarkDisplay config={activeLogoConfig} />
 
-              {/* Top Center Logo / Emblem */}
-              {activeLogoConfig.enabled && activeLogoConfig.position === 'top-center' && (
-                <div className="mb-4 text-center select-none print:mb-2">
-                  <PartyLogoDisplay config={activeLogoConfig} className="mx-auto" />
-                </div>
-              )}
-
-              {/* Top Left Logo */}
-              {activeLogoConfig.enabled && activeLogoConfig.position === 'top-left' && (
-                <div className="mb-2 select-none">
-                  <PartyLogoDisplay config={activeLogoConfig} />
-                </div>
-              )}
+              {/* Editable Logo / Emblem Spot directly on the A4 PDF sheet */}
+              <EditablePartyLogoSpot
+                config={activeLogoConfig}
+                onChange={handleUpdateLogoConfig}
+              />
 
               {/* Document Content */}
               <div className="font-['Times_New_Roman',serif] text-slate-900 text-sm sm:text-base leading-relaxed whitespace-pre-wrap selection:bg-red-100 relative z-10 text-justify">
@@ -364,6 +346,14 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Direct Party Logo Modal */}
+      <PartyLogoModal
+        isOpen={isLogoModalOpen}
+        onClose={() => setIsLogoModalOpen(false)}
+        config={activeLogoConfig}
+        onChange={handleUpdateLogoConfig}
+      />
     </div>
   );
 };

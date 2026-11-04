@@ -31,13 +31,16 @@ import {
   PartyLogoDisplay,
   PartyWatermarkDisplay,
   DEFAULT_LOGO_CONFIG,
-  PartyEmblemSvg
+  PartyEmblemSvg,
+  EditablePartyLogoSpot,
+  PartyLogoModal
 } from './PartyLogo';
 
 export const ReviewTab: React.FC = () => {
   const [inputText, setInputText] = useState<string>(PARTY_SAMPLE_DOCUMENTS[0].rawText);
   const [fontSize, setFontSize] = useState<'13pt' | '14pt'>('13pt');
   const [loading, setLoading] = useState<boolean>(false);
+  const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
   const [reviewResult, setReviewResult] = useState<DocumentReviewResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
@@ -561,16 +564,16 @@ export const ReviewTab: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => setLogoConfig((c) => ({ ...c, enabled: !c.enabled }))}
-                    className={`px-2 py-1 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1 shadow-2xs ${
+                    onClick={() => setIsLogoModalOpen(true)}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1 shadow-2xs ${
                       logoConfig.enabled
-                        ? 'bg-red-50 text-red-800 border-red-300'
+                        ? 'bg-red-50 text-red-800 border-red-300 hover:bg-red-100'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
-                    title="Bật/Tắt hiển thị Huy hiệu Đảng trên bản xem trước"
+                    title="Nhấp để thay đổi mẫu Huy hiệu hoặc tải ảnh Logo riêng"
                   >
                     <PartyEmblemSvg type={logoConfig.type} sizePx={14} />
-                    <span>Huy hiệu: {logoConfig.enabled ? 'Bật' : 'Tắt'}</span>
+                    <span>Huy hiệu: {logoConfig.enabled ? 'Bật' : 'Tắt'} (Đổi)</span>
                   </button>
 
                   <button
@@ -615,19 +618,11 @@ export const ReviewTab: React.FC = () => {
                     {/* Optional Watermark */}
                     <PartyWatermarkDisplay config={logoConfig} />
 
-                    {/* Top Center Logo / Emblem */}
-                    {logoConfig.enabled && logoConfig.position === 'top-center' && (
-                      <div className="mb-4 text-center select-none print:mb-2 relative z-10">
-                        <PartyLogoDisplay config={logoConfig} className="mx-auto" />
-                      </div>
-                    )}
-
-                    {/* Top Left Logo */}
-                    {logoConfig.enabled && logoConfig.position === 'top-left' && (
-                      <div className="mb-3 select-none relative z-10">
-                        <PartyLogoDisplay config={logoConfig} />
-                      </div>
-                    )}
+                    {/* Direct Editable Logo / Emblem Spot on Document Sheet */}
+                    <EditablePartyLogoSpot
+                      config={logoConfig}
+                      onChange={setLogoConfig}
+                    />
 
                     <div className="relative z-10">
                       {reviewResult.full_corrected_text}
@@ -828,8 +823,17 @@ export const ReviewTab: React.FC = () => {
           documentTitle={`${reviewResult.document_type || 'Van_ban_Dang'}_Chuan_HD05_TW`}
           documentText={reviewResult.full_corrected_text}
           logoConfig={logoConfig}
+          onLogoConfigChange={setLogoConfig}
         />
       )}
+
+      {/* Direct Party Logo Customization Modal */}
+      <PartyLogoModal
+        isOpen={isLogoModalOpen}
+        onClose={() => setIsLogoModalOpen(false)}
+        config={logoConfig}
+        onChange={setLogoConfig}
+      />
     </div>
   );
 };

@@ -28,7 +28,8 @@ import {
   PartyLogoSelector,
   PartyLogoDisplay,
   PartyWatermarkDisplay,
-  DEFAULT_LOGO_CONFIG
+  DEFAULT_LOGO_CONFIG,
+  EditablePartyLogoSpot
 } from './PartyLogo';
 
 export const DraftingTab: React.FC = () => {
@@ -719,19 +720,11 @@ export const DraftingTab: React.FC = () => {
                 {/* Optional Watermark */}
                 <PartyWatermarkDisplay config={logoConfig} />
 
-                {/* Top Center Logo / Emblem */}
-                {logoConfig.enabled && logoConfig.position === 'top-center' && (
-                  <div className="mb-4 text-center select-none print:mb-2 relative z-10">
-                    <PartyLogoDisplay config={logoConfig} className="mx-auto" />
-                  </div>
-                )}
-
-                {/* Top Left Logo */}
-                {logoConfig.enabled && logoConfig.position === 'top-left' && (
-                  <div className="mb-3 select-none relative z-10">
-                    <PartyLogoDisplay config={logoConfig} />
-                  </div>
-                )}
+                {/* Direct Editable Logo / Emblem Spot on Document Sheet */}
+                <EditablePartyLogoSpot
+                  config={logoConfig}
+                  onChange={setLogoConfig}
+                />
 
                 <div className="relative z-10">
                   {generatedDoc.full_text}
@@ -775,6 +768,7 @@ export const DraftingTab: React.FC = () => {
         documentTitle={pdfModalTitle}
         documentText={pdfModalContent}
         logoConfig={logoConfig}
+        onLogoConfigChange={setLogoConfig}
         onApplyReference={(text) => {
           setReferenceText(text);
           setShowReferenceBox(true);

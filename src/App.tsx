@@ -28,8 +28,12 @@ export default function App() {
       <footer className="bg-slate-950 text-stone-400 text-xs border-t border-red-950/80 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-red-900 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold">
-              <FileCheck className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-full bg-white border border-amber-400/80 flex items-center justify-center overflow-hidden p-0.5 shadow-sm shrink-0">
+              <img
+                src="/assets/aistudio/Logo_Van_Phong_Dang_Uy_3a47be70.svg"
+                alt="Logo Văn Phòng Đảng Ủy"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
             <div>
               <p className="font-bold text-stone-200">

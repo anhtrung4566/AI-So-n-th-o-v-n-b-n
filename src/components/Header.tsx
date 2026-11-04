@@ -32,10 +32,12 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
       {/* Main header bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center space-x-3.5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-700 via-red-800 to-amber-700 p-0.5 shadow-lg flex items-center justify-center shrink-0 border border-amber-500/30">
-            <div className="w-full h-full bg-slate-950/90 rounded-[10px] flex items-center justify-center">
-              <FileCheck className="w-6 h-6 text-amber-400" />
-            </div>
+          <div className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center shrink-0 border-2 border-amber-400/80 bg-white overflow-hidden p-0.5 ring-2 ring-red-700/60">
+            <img
+              src="/assets/aistudio/Logo_Van_Phong_Dang_Uy_3a47be70.svg"
+              alt="Logo Văn Phòng Đảng Ủy Phường Tân Sơn Nhất"
+              className="w-full h-full object-contain rounded-full select-none"
+            />
           </div>
           <div>
             <div className="flex items-center gap-2">
