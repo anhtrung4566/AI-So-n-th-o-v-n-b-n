@@ -72,10 +72,10 @@ export const DraftingTab: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
-    // 1. Attempt Backend API with 2500ms timeout
+    // 1. Attempt Backend API with 45000ms timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
       const response = await fetch('/api/generate-document', {
         method: 'POST',
@@ -425,6 +425,10 @@ export const DraftingTab: React.FC = () => {
                 placeholder="Dán toàn bộ nội dung văn bản mẫu cần tham khảo vào đây (AI sẽ đọc hiểu cách bố cục, các điều khoản, thẩm quyền ký, căn cứ pháp lý để viết văn bản mới theo đúng phong cách này)..."
                 className="w-full text-xs font-admin p-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-slate-900 leading-relaxed resize-none selection:bg-amber-100"
               />
+              <div className="flex items-center justify-between text-[11px] text-slate-500 px-1 pt-1">
+                <span className="text-amber-800 font-medium">Hỗ trợ văn bản mẫu đến 10.000 ký tự</span>
+                <span className="font-semibold text-slate-700">{referenceText.length.toLocaleString('vi-VN')} / 10.000 ký tự</span>
+              </div>
             </div>
 
             {/* Action buttons for reference */}
@@ -609,6 +613,10 @@ export const DraftingTab: React.FC = () => {
               placeholder="Nhập các ý chính, yêu cầu, căn cứ pháp lý, nhiệm vụ trọng tâm hoặc giải pháp cần triển khai..."
               className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-red-600 focus:border-transparent text-slate-800 leading-relaxed resize-none font-admin"
             />
+            <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+              <span>Được nhập tối đa 10.000 ký tự</span>
+              <span className="font-semibold text-slate-700">{keyPoints.length.toLocaleString('vi-VN')} / 10.000 ký tự</span>
+            </div>
           </div>
 
           {/* Signer */}
@@ -772,9 +780,10 @@ export const DraftingTab: React.FC = () => {
                 <button
                   onClick={handleExportWord}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-2xs"
+                  title="Tải văn bản Word chuẩn OpenXML (.docx) không bao giờ bị lỗi format"
                 >
                   <FileDown className="w-3.5 h-3.5" />
-                  <span>Xuất file Word (.doc)</span>
+                  <span>Xuất Word (.docx)</span>
                 </button>
               </div>
             )}

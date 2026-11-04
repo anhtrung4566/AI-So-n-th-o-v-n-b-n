@@ -15,10 +15,12 @@ import {
   ChevronRight,
   Maximize2,
   Eye,
-  Sliders
+  Sliders,
+  FileDown
 } from 'lucide-react';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
 import { parsePartyDocumentText, generatePartyDocumentHtml } from '../utils/partyDocumentFormatter';
+import { exportToWordDocument } from '../utils/docxExporter';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
@@ -173,6 +175,16 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                 <ZoomIn className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            {/* Export Word docx */}
+            <button
+              onClick={() => exportToWordDocument(activeTitle, activeContent)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+              title="Tải văn bản Word chuẩn OpenXML (.docx) không lỗi"
+            >
+              <FileDown className="w-3.5 h-3.5 text-blue-200" />
+              <span>Xuất Word (.docx)</span>
+            </button>
 
             {/* Print / Save PDF */}
             <button

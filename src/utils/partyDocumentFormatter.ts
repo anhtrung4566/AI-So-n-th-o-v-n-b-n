@@ -36,6 +36,19 @@ function cleanMarkdown(str: string): string {
 }
 
 /**
+ * Safely escapes HTML special characters to prevent corrupting Word / PDF rendering
+ */
+export function escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Parses any Party document plain text into structured elements according to Hướng dẫn 05-HD/VPTW
  */
 export function parsePartyDocumentText(content: string): ParsedPartyDocument {
@@ -162,7 +175,7 @@ export function parsePartyDocumentText(content: string): ParsedPartyDocument {
 
   // 3. Locate Header Boundary from top
   let headerEndIndex = 0;
-  for (let i = 0; i < Math.min(bodyEndIndex, 12); i++) {
+  for (let i = 0; i < Math.min(bodyEndIndex, 30); i++) {
     const l = cleanMarkdown(rawLines[i]);
     const isDocType = docTypeKeywords.some(
       (dt) => l.toUpperCase() === dt || l.toUpperCase().startsWith(dt + ' ')
@@ -174,7 +187,7 @@ export function parsePartyDocumentText(content: string): ParsedPartyDocument {
     }
   }
   if (headerEndIndex === 0) {
-    headerEndIndex = Math.min(bodyEndIndex, 5);
+    headerEndIndex = Math.min(bodyEndIndex, 8);
   }
 
   const headerLines = rawLines.slice(0, headerEndIndex);
@@ -363,10 +376,10 @@ export function parsePartyDocumentText(content: string): ParsedPartyDocument {
 export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
   // 1. Header Left HTML
   const parentOrgHtml = parsed.parentOrg
-    ? `<div style="font-size: 12pt; font-weight: normal; text-transform: uppercase; margin-bottom: 1pt; font-family: 'Times New Roman', Times, serif;">${parsed.parentOrg}</div>`
+    ? `<div style="font-size: 12pt; font-weight: normal; text-transform: uppercase; margin-bottom: 1pt; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.parentOrg)}</div>`
     : '';
 
-  const issuingOrgHtml = `<div style="font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2pt; font-family: 'Times New Roman', Times, serif;">${parsed.issuingOrg}</div>`;
+  const issuingOrgHtml = `<div style="font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2pt; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.issuingOrg)}</div>`;
 
   // Mini-table underline for Issuing Org (ensures bulletproof rendering in MS Word and browsers)
   const headerDividerLeft = `
@@ -377,14 +390,16 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
     </table>
   `;
 
-  const docNumberHtml = `<div style="font-size: 12pt; font-family: 'Times New Roman', Times, serif; margin-top: 2pt;">${parsed.docNumber}</div>`;
+  const docNumberHtml = `<div style="font-size: 12pt; font-family: 'Times New Roman', Times, serif; margin-top: 2pt;">${escapeHtml(parsed.docNumber)}</div>`;
 
   const congVanSubjectUnderDocNum =
     parsed.isCongVan && parsed.subject
       ? `<div style="font-size: 11pt; font-style: italic; margin-top: 3pt; font-family: 'Times New Roman', Times, serif; line-height: 1.25;">${
-          parsed.subject.startsWith('V/v') || parsed.subject.startsWith('Về việc')
-            ? parsed.subject
-            : `V/v ${parsed.subject}`
+          escapeHtml(
+            parsed.subject.startsWith('V/v') || parsed.subject.startsWith('Về việc')
+              ? parsed.subject
+              : `V/v ${parsed.subject}`
+          )
         }</div>`
       : '';
 
@@ -400,7 +415,7 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
     </table>
   `;
 
-  const placeDateHtml = `<div style="font-size: 13pt; font-style: italic; margin-top: 3pt; font-family: 'Times New Roman', Times, serif;">${parsed.placeDate}</div>`;
+  const placeDateHtml = `<div style="font-size: 13pt; font-style: italic; margin-top: 3pt; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.placeDate)}</div>`;
 
   // 3. Title / Subject Section
   let titleSectionHtml = '';
@@ -409,7 +424,7 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
       <div style="margin: 14pt 0 16pt 0; text-align: center;">
         ${
           parsed.congVanRecipient
-            ? `<div style="font-size: 13pt; font-weight: bold; margin: 12pt 0; font-family: 'Times New Roman', Times, serif;">Kính gửi: ${parsed.congVanRecipient.replace(
+            ? `<div style="font-size: 13pt; font-weight: bold; margin: 12pt 0; font-family: 'Times New Roman', Times, serif;">Kính gửi: ${escapeHtml(parsed.congVanRecipient).replace(
                 /\n/g,
                 '<br/>'
               )}</div>`
@@ -420,8 +435,8 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
   } else {
     titleSectionHtml = `
       <div style="text-align: center; margin: 18pt 0 14pt 0;">
-        <div style="font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4pt; font-family: 'Times New Roman', Times, serif;">${parsed.docType}</div>
-        <div style="font-size: 13pt; font-weight: bold; margin-bottom: 4pt; max-width: 88%; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">${parsed.subject}</div>
+        <div style="font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4pt; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.docType)}</div>
+        <div style="font-size: 13pt; font-weight: bold; margin-bottom: 4pt; max-width: 88%; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.subject)}</div>
         <table align="center" style="margin: 3pt auto 4pt auto; border-collapse: collapse; border: none; width: 32%; mso-table-lspace: 0pt; mso-table-rspace: 0pt;" cellpadding="0" cellspacing="0">
           <tr>
             <td style="border-bottom: 1.5pt solid #000000; height: 1pt; line-height: 1pt; font-size: 1pt; padding: 0;">&nbsp;</td>
@@ -429,7 +444,7 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
         </table>
         ${
           parsed.congVanRecipient
-            ? `<div style="font-size: 13pt; font-weight: bold; margin-top: 10pt; font-family: 'Times New Roman', Times, serif;">Kính gửi: ${parsed.congVanRecipient.replace(
+            ? `<div style="font-size: 13pt; font-weight: bold; margin-top: 10pt; font-family: 'Times New Roman', Times, serif;">Kính gửi: ${escapeHtml(parsed.congVanRecipient).replace(
                 /\n/g,
                 '<br/>'
               )}</div>`
@@ -445,7 +460,7 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
       ? parsed.bases
           .map(
             (b) =>
-              `<p style="font-size: 13pt; font-style: italic; margin: 3pt 0; text-align: justify; text-indent: 1cm; line-height: 1.35; font-family: 'Times New Roman', Times, serif;">${b}</p>`
+              `<p style="font-size: 13pt; font-style: italic; margin: 3pt 0; text-align: justify; text-indent: 1cm; line-height: 1.35; font-family: 'Times New Roman', Times, serif;">${escapeHtml(b)}</p>`
           )
           .join('')
       : '';
@@ -460,20 +475,19 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
       if (
         /^(BAN CHẤP HÀNH|BAN THƯỜNG VỤ|ĐẢNG ỦY)[\s\w]+(QUYẾT NGHỊ|QUYẾT ĐỊNH):/i.test(trimmed)
       ) {
-        return `<p style="font-size: 13pt; font-weight: bold; text-align: center; margin: 12pt 0 6pt 0; text-transform: uppercase; font-family: 'Times New Roman', Times, serif;">${trimmed}</p>`;
+        return `<p style="font-size: 13pt; font-weight: bold; text-align: center; margin: 12pt 0 6pt 0; text-transform: uppercase; font-family: 'Times New Roman', Times, serif;">${escapeHtml(trimmed)}</p>`;
       }
       if (/^[I|V|X]+\.\s+/i.test(trimmed)) {
-        return `<p style="font-size: 13pt; font-weight: bold; margin: 10pt 0 4pt 0; text-indent: 1cm; font-family: 'Times New Roman', Times, serif;">${trimmed}</p>`;
+        return `<p style="font-size: 13pt; font-weight: bold; margin: 10pt 0 4pt 0; text-indent: 1cm; font-family: 'Times New Roman', Times, serif;">${escapeHtml(trimmed)}</p>`;
       }
       if (/^Điều \d+\./.test(trimmed)) {
         const dotIndex = trimmed.indexOf('.');
-        return `<p style="font-size: 13pt; margin: 6pt 0 3pt 0; text-align: justify; text-indent: 1cm; line-height: 1.35; font-family: 'Times New Roman', Times, serif;"><strong style="font-weight: bold;">${trimmed.slice(
-          0,
-          dotIndex + 1
-        )}</strong>${trimmed.slice(dotIndex + 1)}</p>`;
+        const articlePrefix = trimmed.slice(0, dotIndex + 1);
+        const articleRest = trimmed.slice(dotIndex + 1);
+        return `<p style="font-size: 13pt; margin: 6pt 0 3pt 0; text-align: justify; text-indent: 1cm; line-height: 1.35; font-family: 'Times New Roman', Times, serif;"><strong style="font-weight: bold;">${escapeHtml(articlePrefix)}</strong>${escapeHtml(articleRest)}</p>`;
       }
 
-      return `<p style="font-size: 13pt; margin: 4pt 0; text-align: justify; text-indent: 1cm; line-height: 1.35; font-family: 'Times New Roman', Times, serif;">${trimmed}</p>`;
+      return `<p style="font-size: 13pt; margin: 4pt 0; text-align: justify; text-indent: 1cm; line-height: 1.35; font-family: 'Times New Roman', Times, serif;">${escapeHtml(trimmed)}</p>`;
     })
     .join('');
 
@@ -481,17 +495,17 @@ export function generatePartyDocumentHtml(parsed: ParsedPartyDocument): string {
   const recipientsItemsHtml = parsed.recipients
     .map(
       (r) =>
-        `<div style="font-size: 10.5pt; line-height: 1.25; font-family: 'Times New Roman', Times, serif;">${r}</div>`
+        `<div style="font-size: 10.5pt; line-height: 1.25; font-family: 'Times New Roman', Times, serif;">${escapeHtml(r)}</div>`
     )
     .join('');
 
   const signerAuthorityHtml = parsed.signerAuthority
-    ? `<div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2pt; font-family: 'Times New Roman', Times, serif;">${parsed.signerAuthority}</div>`
+    ? `<div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2pt; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.signerAuthority)}</div>`
     : '';
   const signerRoleHtml = parsed.signerRole
-    ? `<div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2pt; font-family: 'Times New Roman', Times, serif;">${parsed.signerRole}</div>`
+    ? `<div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2pt; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.signerRole)}</div>`
     : '';
-  const signerNameHtml = `<div style="font-size: 13pt; font-weight: bold; font-family: 'Times New Roman', Times, serif;">${parsed.signerName}</div>`;
+  const signerNameHtml = `<div style="font-size: 13pt; font-weight: bold; font-family: 'Times New Roman', Times, serif;">${escapeHtml(parsed.signerName)}</div>`;
 
   return `
     <!-- BẢNG ĐẦU TRANG 2 CỘT CHUẨN THỂ THỨC HƯỚNG DẪN 05-HD/VPTW -->

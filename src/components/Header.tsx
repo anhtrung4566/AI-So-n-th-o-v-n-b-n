@@ -1,9 +1,9 @@
 import React from 'react';
-import { FileCheck, ShieldCheck, BookOpen, PenTool, Wand2, Star, MessageSquareText } from 'lucide-react';
+import { FileCheck, ShieldCheck, PenTool, Wand2, Star, MessageSquareText } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'review' | 'draft' | 'tone' | 'handbook' | 'chat';
-  setActiveTab: (tab: 'review' | 'draft' | 'tone' | 'handbook' | 'chat') => void;
+  activeTab: 'review' | 'draft' | 'tone' | 'chat';
+  setActiveTab: (tab: 'review' | 'draft' | 'tone' | 'chat') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
@@ -105,18 +105,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             <span className="bg-amber-400 text-slate-950 font-black text-[10px] px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
               Gemini
             </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('handbook')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-              activeTab === 'handbook'
-                ? 'bg-red-800 text-white shadow-md border border-red-600/40'
-                : 'text-stone-300 hover:text-white hover:bg-slate-800/80'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 text-amber-300" />
-            <span>Cẩm Nang Thể Thức 05</span>
           </button>
         </nav>
       </div>

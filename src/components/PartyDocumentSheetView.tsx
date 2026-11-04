@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { parsePartyDocumentText, ParsedPartyDocument } from '../utils/partyDocumentFormatter';
-import { Columns, FileText, Check, Copy } from 'lucide-react';
+import { Columns, FileText, Check, Copy, FileDown } from 'lucide-react';
+import { exportToWordDocument } from '../utils/docxExporter';
 
 interface PartyDocumentSheetViewProps {
   content: string;
@@ -56,15 +57,27 @@ export const PartyDocumentSheetView: React.FC<PartyDocumentSheetViewProps> = ({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="flex items-center gap-1 text-[11px] font-medium text-stone-600 hover:text-red-700 px-2 py-1 rounded hover:bg-white transition"
-          title="Sao chép toàn văn bản"
-        >
-          {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-          <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => exportToWordDocument(`${parsed.docType || 'Van_ban'}_ChuanHD05`, content)}
+            className="flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition border border-blue-200"
+            title="Tải văn bản Word chuẩn OpenXML (.docx) không lỗi"
+          >
+            <FileDown className="w-3 h-3 text-blue-600" />
+            <span>Xuất Word (.docx)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex items-center gap-1 text-[11px] font-medium text-stone-600 hover:text-red-700 px-2 py-1 rounded hover:bg-white transition"
+            title="Sao chép toàn văn bản"
+          >
+            {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+            <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
+          </button>
+        </div>
       </div>
 
       {viewMode === 'raw' ? (

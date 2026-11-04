@@ -3,12 +3,11 @@ import { Header } from './components/Header';
 import { ReviewTab } from './components/ReviewTab';
 import { DraftingTab } from './components/DraftingTab';
 import { ToneConverterTab } from './components/ToneConverterTab';
-import { HandbookTab } from './components/HandbookTab';
 import { ChatTab } from './components/ChatTab';
-import { ShieldCheck, BookOpen, Heart, FileCheck, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Heart, FileCheck, CheckCircle } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'review' | 'draft' | 'tone' | 'handbook' | 'chat'>('review');
+  const [activeTab, setActiveTab] = useState<'review' | 'draft' | 'tone' | 'chat'>('review');
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 selection:bg-red-200">
@@ -21,7 +20,6 @@ export default function App() {
         {activeTab === 'draft' && <DraftingTab />}
         {activeTab === 'tone' && <ToneConverterTab />}
         {activeTab === 'chat' && <ChatTab />}
-        {activeTab === 'handbook' && <HandbookTab />}
       </main>
 
       {/* Footer */}

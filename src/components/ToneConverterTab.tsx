@@ -33,10 +33,10 @@ export const ToneConverterTab: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
-    // 1. Attempt Backend API with 2500ms timeout
+    // 1. Attempt Backend API with 45000ms timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
       const response = await fetch('/api/rewrite-formal', {
         method: 'POST',
@@ -149,6 +149,10 @@ export const ToneConverterTab: React.FC = () => {
             placeholder="Nhập hoặc dán ý kiến, báo cáo sơ bộ hoặc nội dung chưa chuẩn văn phong hành chính..."
             className="w-full text-sm p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-600 focus:border-transparent bg-slate-50/50 resize-none text-slate-900 leading-relaxed"
           />
+          <div className="flex items-center justify-between text-xs text-slate-500 mt-1 px-1">
+            <span>Hỗ trợ đoạn văn bản lên đến 10.000 ký tự</span>
+            <span className="font-semibold text-slate-700">{rawText.length.toLocaleString('vi-VN')} / 10.000 ký tự</span>
+          </div>
 
           {errorMessage && (
             <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 flex items-start justify-between gap-3 shadow-xs">

@@ -62,11 +62,11 @@ export const ReviewTab: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
-    // 1. Attempt Backend API with 2500ms timeout
+    // 1. Attempt Backend API with 45000ms timeout
     let gotValidResponse = false;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
       const response = await fetch('/api/analyze-document', {
         method: 'POST',
@@ -409,11 +409,16 @@ export const ReviewTab: React.FC = () => {
             </div>
 
             {/* Input Footer */}
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-              <div className="flex items-center gap-3">
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <span>{wordCount.toLocaleString('vi-VN')} từ</span>
                 <span>•</span>
-                <span>{charCount.toLocaleString('vi-VN')} ký tự</span>
+                <span className={`font-semibold ${charCount > 10000 ? 'text-amber-700' : 'text-slate-700'}`}>
+                  {charCount.toLocaleString('vi-VN')} / 10.000 ký tự
+                </span>
+                <span className="bg-emerald-50 text-emerald-800 text-[11px] px-2 py-0.5 rounded font-medium border border-emerald-200">
+                  Hỗ trợ văn bản dài đến 10.000+ ký tự
+                </span>
               </div>
               <button
                 onClick={handleReview}
@@ -621,10 +626,11 @@ export const ReviewTab: React.FC = () => {
                   </button>
                   <button
                     onClick={handleExportWord}
-                    className="p-1.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-2xs"
-                    title="Tải văn bản Word chuẩn format (.doc)"
+                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-2xs"
+                    title="Tải văn bản Word chuẩn OpenXML (.docx) không bao giờ bị lỗi format"
                   >
-                    <FileDown className="w-4 h-4" />
+                    <FileDown className="w-3.5 h-3.5" />
+                    <span>Xuất Word (.docx)</span>
                   </button>
                   <button
                     onClick={handlePrint}

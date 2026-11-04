@@ -92,7 +92,7 @@ async function callGeminiWithFallback(ai: GoogleGenAI, requestConfig: any) {
       });
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`Timeout with model ${model} after 2000ms`)), 2000);
+        setTimeout(() => reject(new Error(`Timeout with model ${model} after 45000ms`)), 45000);
       });
 
       const response: any = await Promise.race([generatePromise, timeoutPromise]);
@@ -444,6 +444,7 @@ CÁC QUY TẮC BẮT BUỘC KHI RÀ SOÁT THỂ THỨC VĂN BẢN ĐẢNG THEO H
         config: {
           systemInstruction: systemPrompt,
           responseMimeType: 'application/json',
+          maxOutputTokens: 8192,
           responseSchema: {
             type: Type.OBJECT,
             properties: {
@@ -880,6 +881,7 @@ QUY CHUẨN BỐ CỤC BẮT BUỘC TRONG VĂN BẢN TRẢ VỀ:
           config: {
             systemInstruction: systemPrompt,
             responseMimeType: 'application/json',
+            maxOutputTokens: 8192,
             responseSchema: {
               type: Type.OBJECT,
               properties: {
@@ -1108,6 +1110,7 @@ ${rawText}
           config: {
             systemInstruction: getSystemInstruction(),
             responseMimeType: 'application/json',
+            maxOutputTokens: 8192,
             responseSchema: {
               type: Type.OBJECT,
               properties: {
