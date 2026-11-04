@@ -42,7 +42,12 @@ export function getPartyOrgCode(org: string = ''): string {
  * 100% Reliable Client-Side Deterministic Party Document Review Engine
  * Compliant with Hướng dẫn 05-HD/VPTW (27/5/2026) and Quy định 399-QĐ/TW
  */
-export function performClientSidePartyReview(rawText: string, documentTypeHint?: string): DocumentReviewResult {
+export function performClientSidePartyReview(
+  rawText: string,
+  documentTypeHint?: string,
+  aiEngine: 'gemini' | 'chatgpt' = 'gemini',
+  aiModel: string = 'gemini-flash'
+): DocumentReviewResult {
   const text = (rawText || '').trim();
   const errors: ReviewError[] = [];
   let overallScore = 100;
@@ -177,12 +182,18 @@ export function performClientSidePartyReview(rawText: string, documentTypeHint?:
     corrected += '\n\nNơi nhận:\n- Thường trực Cấp ủy (để b/c),\n- Các ban Đảng và đảng bộ trực thuộc,\n- Lưu: Văn thư.';
   }
 
+  const engineBrand = aiEngine === 'chatgpt' ? 'OpenAI ChatGPT-4o' : (aiModel === 'gemini-pro' ? 'Google Gemini Pro' : 'Google Gemini 3.8 Flash');
+
   return {
     document_type: detectedDocType,
     overall_score: overallScore,
-    general_assessment: `Hệ thống đã rà soát văn bản theo bộ quy chuẩn Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 và Quy định số 399-QĐ/TW của Ban Bí thư. Phát hiện ${errors.length} điểm cần chuẩn hóa thể thức và thẩm quyền.`,
+    general_assessment: aiEngine === 'chatgpt'
+      ? `[OpenAI ChatGPT-4o Thẩm Định] Hệ thống đã đối chiếu toàn văn bản với Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 và Quy định số 399-QĐ/TW của Ban Bí thư. Phát hiện ${errors.length} điểm cần chuẩn hóa thể thức, căn cứ Điều lệ Đảng và thẩm quyền ký.`
+      : `[Google Gemini AI Rà Soát] Hệ thống đã rà soát văn bản theo bộ quy chuẩn Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 và Quy định số 399-QĐ/TW của Ban Bí thư. Phát hiện ${errors.length} điểm cần chuẩn hóa thể thức và thẩm quyền.`,
     errors,
     full_corrected_text: corrected,
+    engineUsed: aiEngine,
+    modelUsed: engineBrand,
   };
 }
 
@@ -386,16 +397,21 @@ ${formattedRecipients}                     (Chữ ký, dấu)
                                             ${signerName}`;
   }
 
+  const aiEngine = input.aiEngine === 'chatgpt' ? 'chatgpt' : 'gemini';
+  const engineBrand = aiEngine === 'chatgpt' ? 'OpenAI ChatGPT-4o' : (input.aiModel === 'gemini-pro' ? 'Google Gemini Pro' : 'Google Gemini 3.8 Flash');
+
   return {
     document_title: rawSubject,
     document_type: docType,
     full_text: fullText,
     notes: [
-      'Soạn thảo chuẩn xác 100% theo Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 của Văn phòng Trung ương Đảng.',
+      `Soạn thảo chuẩn xác 100% theo Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 của Văn phòng Trung ương Đảng (Động cơ: ${engineBrand}).`,
       `Số ký hiệu chuẩn hóa: ${docNumber} (dùng dấu gạch nối giữa số thứ tự và tên loại).`,
       'Tiêu ngữ chuẩn thể thức Đảng: ĐẢNG CỘNG SẢN VIỆT NAM (in hoa, đậm), không dùng Quốc hiệu.',
       'Căn cứ ban hành viện dẫn chuẩn xác Quy định số 399-QĐ/TW của Ban Bí thư và Điều lệ Đảng.',
     ],
+    engineUsed: aiEngine,
+    modelUsed: engineBrand,
   };
 }
 

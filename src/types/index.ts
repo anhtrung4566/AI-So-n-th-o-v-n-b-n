@@ -25,6 +25,8 @@ export interface DocumentReviewResult {
   general_assessment: string;
   errors: ReviewError[];
   full_corrected_text: string;
+  engineUsed?: 'gemini' | 'chatgpt';
+  modelUsed?: string;
 }
 
 export interface GeneratedDocument {
@@ -32,6 +34,8 @@ export interface GeneratedDocument {
   document_type: string;
   full_text: string;
   notes: string[];
+  engineUsed?: 'gemini' | 'chatgpt';
+  modelUsed?: string;
 }
 
 export interface FormalRewriteResult {

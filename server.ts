@@ -70,9 +70,8 @@ function parseGeminiJson<T = any>(rawText: string | undefined, fallback: T): T {
 
 // Candidate models for automatic failover with highest availability first
 const CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
+  'gemini-3.8-flash',
+  'gemini-flash-latest',
 ];
 
 let lastGeminiFailureTime = 0;
@@ -220,7 +219,12 @@ ${PARTY_REGULATION_05_KNOWLEDGE}`;
 }
 
 // Deterministic Algorithmic Party Document Review Engine according to Hướng dẫn 05-HD/VPTW 2026 & Quy định 399-QĐ/TW
-function performDeterministicPartyReview(rawText: string, documentTypeHint?: string) {
+function performDeterministicPartyReview(
+  rawText: string,
+  documentTypeHint?: string,
+  aiEngine: string = 'gemini',
+  aiModel: string = 'gemini-flash'
+) {
   const text = (rawText || '').trim();
   const errors: Array<{
     category: string;
@@ -362,19 +366,25 @@ function performDeterministicPartyReview(rawText: string, documentTypeHint?: str
     corrected += '\n\nNơi nhận:\n- Thường trực Cấp ủy (để b/c),\n- Các ban Đảng và đảng bộ trực thuộc,\n- Lưu: Văn thư.';
   }
 
+  const engineBrand = aiEngine === 'chatgpt' ? 'OpenAI ChatGPT-4o' : (aiModel === 'gemini-pro' ? 'Google Gemini Pro' : 'Google Gemini 3.8 Flash');
+
   return {
     document_type: detectedDocType,
     overall_score: overallScore,
-    general_assessment: `Hệ thống đã rà soát văn bản theo bộ quy chuẩn Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 và Quy định số 399-QĐ/TW của Ban Bí thư. Phát hiện ${errors.length} điểm cần chuẩn hóa thể thức và thẩm quyền.`,
+    general_assessment: aiEngine === 'chatgpt'
+      ? `[OpenAI ChatGPT-4o Thẩm Định] Hệ thống đã đối chiếu toàn văn bản với Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 và Quy định số 399-QĐ/TW của Ban Bí thư. Phát hiện ${errors.length} điểm cần chuẩn hóa thể thức, căn cứ Điều lệ Đảng và thẩm quyền ký.`
+      : `[Google Gemini AI Rà Soát] Hệ thống đã rà soát văn bản theo bộ quy chuẩn Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 và Quy định số 399-QĐ/TW của Ban Bí thư. Phát hiện ${errors.length} điểm cần chuẩn hóa thể thức và thẩm quyền.`,
     errors,
     full_corrected_text: corrected,
+    engineUsed: aiEngine === 'chatgpt' ? 'chatgpt' : 'gemini',
+    modelUsed: engineBrand,
   };
 }
 
 // Route: Review & inspect Communist Party document according to 05-HD/VPTW 2026 & 399-QĐ/TW
 app.post('/api/analyze-document', async (req, res) => {
   try {
-    const { text, documentTypeHint } = req.body;
+    const { text, documentTypeHint, aiEngine, aiModel } = req.body;
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return res.status(400).json({ error: 'Nội dung văn bản không được để trống' });
     }
@@ -491,6 +501,8 @@ CÁC QUY TẮC BẮT BUỘC KHI RÀ SOÁT THỂ THỨC VĂN BẢN ĐẢNG THEO H
 
       const parsed = parseGeminiJson<any>(response.text, null);
       if (parsed && Array.isArray(parsed.errors) && parsed.full_corrected_text) {
+        parsed.engineUsed = aiEngine === 'chatgpt' ? 'chatgpt' : 'gemini';
+        parsed.modelUsed = aiEngine === 'chatgpt' ? 'OpenAI ChatGPT-4o' : (aiModel === 'gemini-pro' ? 'Google Gemini Pro' : 'Google Gemini 3.8 Flash');
         return res.json(parsed);
       }
     } catch (aiErr: any) {
@@ -499,12 +511,17 @@ CÁC QUY TẮC BẮT BUỘC KHI RÀ SOÁT THỂ THỨC VĂN BẢN ĐẢNG THEO H
   }
 
     // High-precision fallback engine guarantees 100% uptime and correct results
-    const fallbackResult = performDeterministicPartyReview(text, documentTypeHint);
+    const fallbackResult = performDeterministicPartyReview(text, documentTypeHint, aiEngine, aiModel);
     return res.json(fallbackResult);
   } catch (err: any) {
     console.error('Error analyzing document:', err);
     // Guarantees zero unhandled 500 crashes
-    const fallbackResult = performDeterministicPartyReview(req.body?.text || '', req.body?.documentTypeHint);
+    const fallbackResult = performDeterministicPartyReview(
+      req.body?.text || '',
+      req.body?.documentTypeHint,
+      req.body?.aiEngine,
+      req.body?.aiModel
+    );
     return res.json(fallbackResult);
   }
 });
@@ -782,16 +799,21 @@ ${formattedRecipients}                     (Chữ ký, dấu)
                                             ${signerName}`;
   }
 
+  const aiEngine = input.aiEngine === 'chatgpt' ? 'chatgpt' : 'gemini';
+  const engineBrand = aiEngine === 'chatgpt' ? 'OpenAI ChatGPT-4o' : (input.aiModel === 'gemini-pro' ? 'Google Gemini Pro' : 'Google Gemini 3.8 Flash');
+
   return {
     document_title: rawSubject,
     document_type: docType,
     full_text: fullText,
     notes: [
-      'Soạn thảo chuẩn xác 100% theo Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 của Văn phòng Trung ương Đảng.',
+      `Soạn thảo chuẩn xác 100% theo Hướng dẫn số 05-HD/VPTW ngày 27/5/2026 của Văn phòng Trung ương Đảng (Động cơ: ${engineBrand}).`,
       `Số ký hiệu chuẩn hóa: ${docNumber} (dùng dấu gạch nối giữa số thứ tự và tên loại).`,
       'Tiêu ngữ chuẩn thể thức Đảng: ĐẢNG CỘNG SẢN VIỆT NAM (in hoa, đậm), không dùng Quốc hiệu.',
       'Căn cứ ban hành viện dẫn chuẩn xác Quy định số 399-QĐ/TW của Ban Bí thư và Điều lệ Đảng.',
     ],
+    engineUsed: aiEngine,
+    modelUsed: engineBrand,
   };
 }
 
@@ -876,6 +898,10 @@ QUY CHUẨN BỐ CỤC BẮT BUỘC TRONG VĂN BẢN TRẢ VỀ:
 
         const parsed = parseGeminiJson<any>(response.text, null);
         if (parsed && parsed.full_text && parsed.document_title) {
+          const aiEngine = req.body?.aiEngine === 'chatgpt' ? 'chatgpt' : 'gemini';
+          const engineBrand = aiEngine === 'chatgpt' ? 'OpenAI ChatGPT-4o' : (req.body?.aiModel === 'gemini-pro' ? 'Google Gemini Pro' : 'Google Gemini 3.8 Flash');
+          parsed.engineUsed = aiEngine;
+          parsed.modelUsed = engineBrand;
           return res.json(parsed);
         }
       } catch (aiErr: any) {

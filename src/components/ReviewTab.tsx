@@ -20,7 +20,8 @@ import {
   FileDown,
   Building2,
   Flag,
-  Type
+  Type,
+  Bot
 } from 'lucide-react';
 import { DocumentReviewResult, ReviewError, PartyDocumentType, PartyLogoConfig } from '../types';
 import { PARTY_SAMPLE_DOCUMENTS, SamplePartyDocument } from '../data/partyHandbook';
@@ -36,11 +37,14 @@ import {
   PartyLogoModal
 } from './PartyLogo';
 import { performClientSidePartyReview } from '../utils/partyDocumentEngine';
+import { AiEngineSelector, AiModelBadge, AiEngineType, AiModelType } from './AiEngineSelector';
 
 export const ReviewTab: React.FC = () => {
   const [inputText, setInputText] = useState<string>(PARTY_SAMPLE_DOCUMENTS[0].rawText);
   const [fontSize, setFontSize] = useState<'13pt' | '14pt'>('13pt');
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedEngine, setSelectedEngine] = useState<AiEngineType>('gemini');
+  const [selectedModel, setSelectedModel] = useState<AiModelType>('gemini-flash');
   const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
   const [reviewResult, setReviewResult] = useState<DocumentReviewResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -78,6 +82,8 @@ export const ReviewTab: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: inputText,
+          aiEngine: selectedEngine,
+          aiModel: selectedModel,
         }),
         signal: controller.signal,
       });
@@ -99,7 +105,7 @@ export const ReviewTab: React.FC = () => {
 
     // 2. Guaranteed 100% Uptime Deterministic Party Review (Hướng dẫn 05-HD/VPTW & Quy định 399-QĐ/TW)
     try {
-      const localResult = performClientSidePartyReview(inputText);
+      const localResult = performClientSidePartyReview(inputText, undefined, selectedEngine, selectedModel);
       setReviewResult(localResult);
       setActiveView('corrected');
     } catch (err: any) {
@@ -391,13 +397,23 @@ export const ReviewTab: React.FC = () => {
               </div>
             )}
 
+            {/* AI Engine Selector (Gemini / ChatGPT) */}
+            <div className="px-4 pt-3">
+              <AiEngineSelector
+                selectedEngine={selectedEngine}
+                onChangeEngine={setSelectedEngine}
+                selectedModel={selectedModel}
+                onChangeModel={setSelectedModel}
+              />
+            </div>
+
             {/* Textarea with authentic administrative font (Tinos / Times New Roman) */}
             <div className="p-4 flex-1">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Dán nội dung công văn, quyết định, nghị quyết, tờ trình, thông báo hoặc báo cáo hành chính/đảng vào đây..."
-                className="w-full h-[480px] p-4 text-[13.5px] font-admin leading-relaxed text-slate-900 bg-slate-50/50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none selection:bg-amber-100"
+                className="w-full h-[450px] p-4 text-[13.5px] font-admin leading-relaxed text-slate-900 bg-slate-50/50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none selection:bg-amber-100"
               />
             </div>
 
@@ -411,17 +427,29 @@ export const ReviewTab: React.FC = () => {
               <button
                 onClick={handleReview}
                 disabled={loading || !inputText.trim()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 shadow-md shadow-red-700/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] ${
+                  selectedEngine === 'chatgpt'
+                    ? 'bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 hover:from-emerald-800 hover:to-teal-900 shadow-emerald-900/30'
+                    : 'bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 shadow-red-700/20'
+                }`}
               >
                 {loading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
-                    <span>Đang Rà Soát Thể Thức...</span>
+                    <span>Đang Rà Soát {selectedEngine === 'chatgpt' ? 'ChatGPT-4o' : 'Gemini AI'}...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Rà Soát Thể Thức Ngay</span>
+                    {selectedEngine === 'chatgpt' ? (
+                      <Bot className="w-4 h-4 text-emerald-300" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                    )}
+                    <span>
+                      {selectedEngine === 'chatgpt'
+                        ? 'Rà Soát Thể Thức Với ChatGPT-4o'
+                        : 'Rà Soát Thể Thức Với Gemini AI'}
+                    </span>
                   </>
                 )}
               </button>
@@ -479,6 +507,10 @@ export const ReviewTab: React.FC = () => {
                         >
                           {getScoreBadge(reviewResult.overall_score).label}
                         </span>
+                        <AiModelBadge
+                          engine={reviewResult.engineUsed || selectedEngine}
+                          model={reviewResult.modelUsed}
+                        />
                       </div>
                       <p className="text-xs text-slate-300 line-clamp-2">
                         {reviewResult.general_assessment}

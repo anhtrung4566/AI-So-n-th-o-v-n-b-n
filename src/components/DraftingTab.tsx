@@ -35,6 +35,8 @@ import {
   generateClientSidePartyDocument,
   extractClientSideTemplateInfo
 } from '../utils/partyDocumentEngine';
+import { AiEngineSelector, AiModelBadge, AiEngineType, AiModelType } from './AiEngineSelector';
+import { Bot } from 'lucide-react';
 
 export const DraftingTab: React.FC = () => {
   const [docType, setDocType] = useState<string>('Nghị quyết');
@@ -42,6 +44,8 @@ export const DraftingTab: React.FC = () => {
   const [parentOrg, setParentOrg] = useState<string>('TỈNH ỦY NGHỆ AN');
   const [place, setPlace] = useState<string>('Nam Đàn');
   const [recipient, setRecipient] = useState<string>('Thường trực Huyện ủy; các ban xây dựng Đảng; các chi, đảng bộ cơ sở trực thuộc');
+  const [selectedEngine, setSelectedEngine] = useState<AiEngineType>('gemini');
+  const [selectedModel, setSelectedModel] = useState<AiModelType>('gemini-flash');
   const [subject, setSubject] = useState<string>('Về nâng cao năng lực lãnh đạo và sức chiến đấu của tổ chức cơ sở đảng giai đoạn 2026 - 2030');
   const [keyPoints, setKeyPoints] = useState<string>(
     '1. Đánh giá chất lượng sinh hoạt chi bộ và kết quả thực hiện nghị quyết nhiệm kỳ qua.\n2. Mục tiêu 100% bí thư chi bộ được bồi dưỡng nghiệp vụ công tác Đảng theo Hướng dẫn 05-HD/VPTW.\n3. Giao Ban Tổ chức Huyện ủy chủ trì thẩm tra tiêu chuẩn chính trị và hướng dẫn đánh giá xếp loại cuối năm.\n4. Giao Cơ quan Ủy ban Kiểm tra Huyện ủy tăng cường giám sát thường xuyên.'
@@ -96,6 +100,8 @@ export const DraftingTab: React.FC = () => {
           signerTitle,
           signerName,
           referenceText,
+          aiEngine: selectedEngine,
+          aiModel: selectedModel,
         }),
         signal: controller.signal,
       });
@@ -126,6 +132,8 @@ export const DraftingTab: React.FC = () => {
         signerTitle,
         signerName,
         referenceText,
+        aiEngine: selectedEngine,
+        aiModel: selectedModel,
       });
       setGeneratedDoc(localDoc);
     } catch (err: any) {
@@ -695,23 +703,39 @@ export const DraftingTab: React.FC = () => {
             </div>
           )}
 
+          {/* AI Engine Selector (Gemini / ChatGPT) */}
+          <AiEngineSelector
+            selectedEngine={selectedEngine}
+            onChangeEngine={setSelectedEngine}
+            selectedModel={selectedModel}
+            onChangeModel={setSelectedModel}
+          />
+
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 shadow-md shadow-red-700/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className={`w-full py-3 rounded-xl font-bold text-sm text-white shadow-md disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              selectedEngine === 'chatgpt'
+                ? 'bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 hover:from-emerald-800 hover:to-teal-900 shadow-emerald-900/30'
+                : 'bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 shadow-red-700/20'
+            }`}
           >
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
-                <span>Đang Soạn Thảo Văn Bản...</span>
+                <span>Đang Soạn Thảo Với {selectedEngine === 'chatgpt' ? 'ChatGPT-4o' : 'Gemini AI'}...</span>
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 text-amber-300" />
+                {selectedEngine === 'chatgpt' ? (
+                  <Bot className="w-4 h-4 text-emerald-300" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                )}
                 <span>
                   {referenceText.trim()
-                    ? 'Soạn Thảo Chuẩn Theo Mẫu Tham Khảo'
-                    : 'Soạn Thảo Chuẩn Thể Thức Ngay'}
+                    ? `Soạn Thảo Theo Mẫu Với ${selectedEngine === 'chatgpt' ? 'ChatGPT-4o' : 'Gemini AI'}`
+                    : `Soạn Thảo Chuẩn Thể Thức Với ${selectedEngine === 'chatgpt' ? 'ChatGPT-4o' : 'Gemini AI'}`}
                 </span>
               </>
             )}
@@ -722,11 +746,17 @@ export const DraftingTab: React.FC = () => {
         <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           {/* Top toolbar */}
           <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <FileText className="w-4 h-4 text-red-700" />
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Xem Trước Văn Kiện Đảng (Chuẩn Hướng Dẫn 05-HD/VPTW 2026)
+                Xem Trước Văn Kiện Đảng (Chuẩn Hướng Dẫn 05)
               </span>
+              {generatedDoc && (
+                <AiModelBadge
+                  engine={generatedDoc.engineUsed || selectedEngine}
+                  model={generatedDoc.modelUsed}
+                />
+              )}
             </div>
 
             {generatedDoc && (
